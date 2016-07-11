@@ -1,6 +1,6 @@
-#[cfg(test)]
-mod tests {
-    #[test]
-    fn it_works() {
-    }
-}
+pub mod access;
+pub mod cpu;
+pub mod device;
+pub mod peripheral;
+pub mod protection;
+pub mod types;
