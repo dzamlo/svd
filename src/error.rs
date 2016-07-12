@@ -1,4 +1,5 @@
 use std::num::ParseIntError;
+use std::string;
 use xmltree;
 
 #[derive(Debug, PartialEq, Eq)]
@@ -11,6 +12,12 @@ pub enum FromElementError {
 
 impl From<ParseIntError> for FromElementError {
     fn from(_e: ParseIntError) -> FromElementError {
+        FromElementError::InvalidFormat
+    }
+}
+
+impl From<string::ParseError> for FromElementError {
+    fn from(_e: string::ParseError) -> FromElementError {
         FromElementError::InvalidFormat
     }
 }

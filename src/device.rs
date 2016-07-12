@@ -1,11 +1,10 @@
-use access::Access;
 use cpu::Cpu;
 use error::{FromElementError, ParseError};
 use peripheral::Peripheral;
-use protection::Protection;
+use register_properties_group::RegisterPropertiesGroup;
 use std::io::Read;
-use std::str::FromStr;
 use types::*;
+use utils::get_child_text;
 use xmltree;
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
@@ -22,16 +21,8 @@ pub struct Device {
     header_definition_prefix: Option<IdentifierType>,
     address_unit_bits: ScaledNonNegativeInteger,
     width: ScaledNonNegativeInteger,
-    size: Option<ScaledNonNegativeInteger>,
-    access: Option<Access>,
-    protection: Option<Protection>,
-    reset_value: Option<ScaledNonNegativeInteger>,
-    reset_mask: Option<ScaledNonNegativeInteger>,
+    register_properties: RegisterPropertiesGroup,
     peripherals: Vec<Peripheral>,
-}
-
-fn get_child_text(element: &xmltree::Element, name: &str) -> Option<String> {
-    element.get_child(name).map(|child| child.text.clone().unwrap_or_else(String::new))
 }
 
 impl Device {
@@ -56,27 +47,7 @@ impl Device {
         let header_definition_prefix = get_child_text(element, "headerDefinitionsPrefix");
         let address_unit_bits = get_child_text(element, "addressUnitBits");
         let width = get_child_text(element, "width");
-        let size = match get_child_text(element, "size") {
-            Some(s) => Some(try!(ScaledNonNegativeInteger::from_str(&s))),
-            None => None,
-        };
-        let access = match get_child_text(element, "access") {
-            Some(s) => Some(try!(Access::from_str(&s))),
-            None => None,
-        };
-        let protection = match get_child_text(element, "protection") {
-            Some(s) => Some(try!(Protection::from_str(&s))),
-            None => None,
-        };
-        let reset_value = match get_child_text(element, "resetValue") {
-            Some(s) => Some(try!(ScaledNonNegativeInteger::from_str(&s))),
-            None => None,
-        };
-        let reset_mask = match get_child_text(element, "resetMask") {
-            Some(s) => Some(try!(ScaledNonNegativeInteger::from_str(&s))),
-            None => None,
-        };
-
+        let register_properties = try!(RegisterPropertiesGroup::from_element(element));
         let peripherals = element.get_child("peripherals");
 
         if name.is_none() || version.is_none() || description.is_none() ||
@@ -86,9 +57,8 @@ impl Device {
             let name = name.unwrap();
             let version = version.unwrap();
             let description = description.unwrap();
-            let address_unit_bits =
-                try!(ScaledNonNegativeInteger::from_str(&address_unit_bits.unwrap()));
-            let width = try!(ScaledNonNegativeInteger::from_str(&width.unwrap()));
+            let address_unit_bits = try!(address_unit_bits.unwrap().parse());
+            let width = try!(width.unwrap().parse());
             let peripherals: Result<Vec<_>, FromElementError> =
                 peripherals.unwrap().children.iter().map(Peripheral::from_element).collect();
             let peripherals = try!(peripherals);
@@ -106,11 +76,7 @@ impl Device {
                 header_definition_prefix: header_definition_prefix,
                 address_unit_bits: address_unit_bits,
                 width: width,
-                size: size,
-                access: access,
-                protection: protection,
-                reset_value: reset_value,
-                reset_mask: reset_mask,
+                register_properties: register_properties,
                 peripherals: peripherals,
             })
         }
