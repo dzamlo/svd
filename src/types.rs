@@ -4,23 +4,23 @@ use std::str::FromStr;
 pub type IdentifierType = String;
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
-pub struct ScaledNonNegativeInteger(u64);
+pub struct ScaledNonNegativeInteger(pub u64);
 
 impl FromStr for ScaledNonNegativeInteger {
     type Err = FromElementError;
 
     fn from_str(s: &str) -> Result<ScaledNonNegativeInteger, FromElementError> {
         let s = if s.starts_with('+') {
-            s.split_at(1).1
+            &s[1..]
         } else {
             s
         };
 
         let parsed = if s.starts_with('#') {
-            let s = s.split_at(1).1;
+            let s = &s[1..];
             u64::from_str_radix(s, 2)
         } else if s.starts_with("0x") || s.starts_with("0X") {
-            let s = s.split_at(2).1;
+            let s = &s[2..];
             u64::from_str_radix(s, 16)
         } else {
             u64::from_str_radix(s, 10)
