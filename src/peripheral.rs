@@ -2,7 +2,7 @@ use address_block::AddresBlock;
 use dim_element_group::DimElementGroup;
 use error::FromElementError;
 use interrupt::Interrupt;
-use register::Register;
+use register_or_cluster::RegisterOrCluster;
 use register_properties_group::RegisterPropertiesGroup;
 use types::*;
 use utils::get_child_text;
@@ -25,7 +25,7 @@ pub struct Peripheral {
     register_properties: RegisterPropertiesGroup,
     address_blocks: Vec<AddresBlock>,
     interrupts: Vec<Interrupt>,
-    registers: Option<Vec<Register>>,
+    registers: Option<Vec<RegisterOrCluster>>,
 }
 
 impl Peripheral {
@@ -58,7 +58,7 @@ impl Peripheral {
         let registers = match element.get_child("registers") {
             Some(registers) => {
                 let registers: Result<Vec<_>, FromElementError> =
-                    registers.children.iter().map(Register::from_element).collect();
+                    registers.children.iter().map(RegisterOrCluster::from_element).collect();
                 let registers = try!(registers);
                 Some(registers)
             }

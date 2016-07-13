@@ -6,6 +6,7 @@ mod utils;
 
 pub mod access;
 pub mod address_block;
+pub mod cluster;
 pub mod cpu;
 pub mod data_type;
 pub mod device;
@@ -18,5 +19,6 @@ pub mod peripheral;
 pub mod protection;
 pub mod read_action;
 pub mod register;
+pub mod register_or_cluster;
 pub mod register_properties_group;
 pub mod types;
