@@ -2,6 +2,7 @@ use cpu::Cpu;
 use error::{FromElementError, ParseError};
 use peripheral::Peripheral;
 use register_properties_group::RegisterPropertiesGroup;
+use std::collections::HashMap;
 use std::io::Read;
 use types::*;
 use utils::get_child_text;
@@ -80,5 +81,9 @@ impl Device {
                 peripherals: peripherals,
             })
         }
+    }
+
+    pub fn peripherals_map(&self) -> HashMap<&str, &Peripheral> {
+        self.peripherals.iter().map(|p| (&*p.name, p)).collect()
     }
 }
