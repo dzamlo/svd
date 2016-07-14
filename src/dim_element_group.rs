@@ -3,13 +3,13 @@ use types::*;
 use utils::get_child_text;
 use xmltree;
 
-type DimIndexType = String;
+pub type DimIndexType = String;
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct DimElementGroup {
-    dim: Option<ScaledNonNegativeInteger>,
-    dim_increment: Option<ScaledNonNegativeInteger>,
-    dim_index: Option<DimIndexType>,
+    pub dim: Option<ScaledNonNegativeInteger>,
+    pub dim_increment: Option<ScaledNonNegativeInteger>,
+    pub dim_index: Option<DimIndexType>,
 }
 
 impl DimElementGroup {

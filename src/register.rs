@@ -11,19 +11,19 @@ use xmltree;
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Register {
-    derived_from: Option<IdentifierType>,
-    dim_element: DimElementGroup,
-    name: IdentifierType,
-    display_name: Option<String>,
-    description: Option<String>,
-    alternate_group: Option<IdentifierType>,
-    alternate_register: Option<IdentifierType>,
-    address_offset: ScaledNonNegativeInteger,
-    register_properties: RegisterPropertiesGroup,
-    data_type: Option<DataType>,
-    modified_write_values: Option<ModifiedWriteValues>,
-    read_action: Option<ReadAction>,
-    fields: Option<Vec<Field>>,
+    pub derived_from: Option<IdentifierType>,
+    pub dim_element: DimElementGroup,
+    pub name: IdentifierType,
+    pub display_name: Option<String>,
+    pub description: Option<String>,
+    pub alternate_group: Option<IdentifierType>,
+    pub alternate_register: Option<IdentifierType>,
+    pub address_offset: ScaledNonNegativeInteger,
+    pub register_properties: RegisterPropertiesGroup,
+    pub data_type: Option<DataType>,
+    pub modified_write_values: Option<ModifiedWriteValues>,
+    pub read_action: Option<ReadAction>,
+    pub fields: Option<Vec<Field>>,
 }
 
 impl Register {

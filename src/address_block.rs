@@ -14,10 +14,10 @@ pub enum Usage {
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct AddresBlock {
-    offset: ScaledNonNegativeInteger,
-    size: ScaledNonNegativeInteger,
-    usage: Usage,
-    protection: Option<Protection>,
+    pub offset: ScaledNonNegativeInteger,
+    pub size: ScaledNonNegativeInteger,
+    pub usage: Usage,
+    pub protection: Option<Protection>,
 }
 
 impl FromStr for Usage {

@@ -18,6 +18,7 @@ impl From<ParseIntError> for FromElementError {
 
 impl From<string::ParseError> for FromElementError {
     fn from(_e: string::ParseError) -> FromElementError {
+        println!("{:?}", _e);
         FromElementError::InvalidFormat
     }
 }

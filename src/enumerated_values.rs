@@ -4,7 +4,7 @@ use std::str::FromStr;
 use utils::get_child_text;
 use xmltree;
 
-type EnumerationName = String;
+pub type EnumerationName = String;
 
 
 str_enum!{EnumUsage,
@@ -74,9 +74,9 @@ impl EnumeratedValueData {
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct EnumeratedValue {
-    name: EnumerationName,
-    description: Option<String>,
-    value: EnumeratedValueData,
+    pub name: EnumerationName,
+    pub description: Option<String>,
+    pub value: EnumeratedValueData,
 }
 
 impl EnumeratedValue {

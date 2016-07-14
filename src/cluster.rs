@@ -8,14 +8,14 @@ use xmltree;
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Cluster {
-    derived_from: Option<IdentifierType>,
-    dim_element: DimElementGroup,
-    name: IdentifierType,
-    alternate_cluster: Option<IdentifierType>,
-    header_struct_name: Option<IdentifierType>,
-    address_offset: ScaledNonNegativeInteger,
-    register_properties: RegisterPropertiesGroup,
-    registers: Vec<RegisterOrCluster>,
+    pub derived_from: Option<IdentifierType>,
+    pub dim_element: DimElementGroup,
+    pub name: IdentifierType,
+    pub alternate_cluster: Option<IdentifierType>,
+    pub header_struct_name: Option<IdentifierType>,
+    pub address_offset: ScaledNonNegativeInteger,
+    pub register_properties: RegisterPropertiesGroup,
+    pub registers: Vec<RegisterOrCluster>,
 }
 
 impl Cluster {

@@ -7,11 +7,11 @@ use xmltree;
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct RegisterPropertiesGroup {
-    size: Option<ScaledNonNegativeInteger>,
-    access: Option<Access>,
-    protection: Option<Protection>,
-    reset_value: Option<ScaledNonNegativeInteger>,
-    reset_mask: Option<ScaledNonNegativeInteger>,
+    pub size: Option<ScaledNonNegativeInteger>,
+    pub access: Option<Access>,
+    pub protection: Option<Protection>,
+    pub reset_value: Option<ScaledNonNegativeInteger>,
+    pub reset_mask: Option<ScaledNonNegativeInteger>,
 }
 
 impl RegisterPropertiesGroup {

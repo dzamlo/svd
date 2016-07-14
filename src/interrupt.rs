@@ -4,9 +4,9 @@ use xmltree;
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Interrupt {
-    name: String,
-    description: Option<String>,
-    value: i64,
+    pub name: String,
+    pub description: Option<String>,
+    pub value: i64,
 }
 
 impl Interrupt {

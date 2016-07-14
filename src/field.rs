@@ -10,14 +10,14 @@ use xmltree;
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Field {
-    derived_from: Option<IdentifierType>,
-    name: IdentifierType,
-    description: Option<String>,
-    bit_range: BitRange,
-    access: Option<Access>,
-    modified_write_values: Option<ModifiedWriteValues>,
-    read_action: Option<ReadAction>,
-    enumerated_values: Vec<EnumeratedValues>,
+    pub derived_from: Option<IdentifierType>,
+    pub name: IdentifierType,
+    pub description: Option<String>,
+    pub bit_range: BitRange,
+    pub access: Option<Access>,
+    pub modified_write_values: Option<ModifiedWriteValues>,
+    pub read_action: Option<ReadAction>,
+    pub enumerated_values: Vec<EnumeratedValues>,
 }
 
 impl Field {

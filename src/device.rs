@@ -9,20 +9,20 @@ use xmltree;
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Device {
-    vendor: Option<String>,
-    vendor_id: Option<IdentifierType>,
-    name: IdentifierType,
-    series: Option<String>,
-    version: String,
-    description: String,
-    license_text: Option<String>,
-    cpu: Option<Cpu>,
-    header_system_filename: Option<IdentifierType>,
-    header_definition_prefix: Option<IdentifierType>,
-    address_unit_bits: ScaledNonNegativeInteger,
-    width: ScaledNonNegativeInteger,
-    register_properties: RegisterPropertiesGroup,
-    peripherals: Vec<Peripheral>,
+    pub vendor: Option<String>,
+    pub vendor_id: Option<IdentifierType>,
+    pub name: IdentifierType,
+    pub series: Option<String>,
+    pub version: String,
+    pub description: String,
+    pub license_text: Option<String>,
+    pub cpu: Option<Cpu>,
+    pub header_system_filename: Option<IdentifierType>,
+    pub header_definition_prefix: Option<IdentifierType>,
+    pub address_unit_bits: ScaledNonNegativeInteger,
+    pub width: ScaledNonNegativeInteger,
+    pub register_properties: RegisterPropertiesGroup,
+    pub peripherals: Vec<Peripheral>,
 }
 
 impl Device {

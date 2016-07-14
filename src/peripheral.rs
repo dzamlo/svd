@@ -10,22 +10,22 @@ use xmltree;
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Peripheral {
-    derived_from: Option<IdentifierType>,
-    dim_element: DimElementGroup,
-    name: IdentifierType,
-    version: Option<String>,
-    description: Option<String>,
-    alternate_peripheral: Option<IdentifierType>,
-    group_name: Option<String>,
-    prepend_to_name: Option<IdentifierType>,
-    append_to_name: Option<IdentifierType>,
-    header_struct_name: Option<IdentifierType>,
-    disable_condition: Option<String>,
-    base_address: ScaledNonNegativeInteger,
-    register_properties: RegisterPropertiesGroup,
-    address_blocks: Vec<AddresBlock>,
-    interrupts: Vec<Interrupt>,
-    registers: Option<Vec<RegisterOrCluster>>,
+    pub derived_from: Option<IdentifierType>,
+    pub dim_element: DimElementGroup,
+    pub name: IdentifierType,
+    pub version: Option<String>,
+    pub description: Option<String>,
+    pub alternate_peripheral: Option<IdentifierType>,
+    pub group_name: Option<String>,
+    pub prepend_to_name: Option<IdentifierType>,
+    pub append_to_name: Option<IdentifierType>,
+    pub header_struct_name: Option<IdentifierType>,
+    pub disable_condition: Option<String>,
+    pub base_address: ScaledNonNegativeInteger,
+    pub register_properties: RegisterPropertiesGroup,
+    pub address_blocks: Vec<AddresBlock>,
+    pub interrupts: Vec<Interrupt>,
+    pub registers: Option<Vec<RegisterOrCluster>>,
 }
 
 impl Peripheral {

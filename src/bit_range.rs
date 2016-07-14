@@ -5,8 +5,8 @@ use xmltree;
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct BitRange {
-    lsb: u32,
-    msb: u32,
+    pub lsb: u32,
+    pub msb: u32,
 }
 
 impl BitRange {
