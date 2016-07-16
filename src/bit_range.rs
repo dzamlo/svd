@@ -3,7 +3,7 @@ use types::*;
 use utils::get_child_text;
 use xmltree;
 
-#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct BitRange {
     pub lsb: u32,
     pub msb: u32,

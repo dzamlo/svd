@@ -45,4 +45,14 @@ impl RegisterPropertiesGroup {
             reset_mask: reset_mask,
         })
     }
+
+    pub fn merge(&self, other: &RegisterPropertiesGroup) -> RegisterPropertiesGroup {
+        RegisterPropertiesGroup {
+            size: self.size.or(other.size),
+            access: self.access.or(other.access),
+            protection: self.protection.or(other.protection),
+            reset_value: self.reset_value.or(other.reset_value),
+            reset_mask: self.reset_mask.or(other.reset_mask),
+        }
+    }
 }

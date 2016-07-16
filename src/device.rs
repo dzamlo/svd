@@ -27,6 +27,13 @@ pub struct Device {
 }
 
 impl Device {
+    pub fn from_reader<R: Read>(r: R) -> Result<Device, ParseError> {
+        let element = try!(xmltree::Element::parse(r));
+        let mut d = try!(Device::from_element(&element));
+        d.propagate_register_properties();
+        Ok(d)
+    }
+
     pub fn parse<R: Read>(r: R) -> Result<Device, ParseError> {
         let element = try!(xmltree::Element::parse(r));
         Device::from_element(&element).map_err(|e| e.into())
@@ -85,5 +92,11 @@ impl Device {
 
     pub fn peripherals_map(&self) -> HashMap<&str, &Peripheral> {
         self.peripherals.iter().map(|p| (&*p.name, p)).collect()
+    }
+
+    pub fn propagate_register_properties(&mut self) {
+        for peripheral in &mut self.peripherals {
+            peripheral.propagate_register_properties(&self.register_properties);
+        }
     }
 }

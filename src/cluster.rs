@@ -52,4 +52,12 @@ impl Cluster {
 
         }
     }
+
+    pub fn propagate_register_properties(&mut self,
+                                         register_properties: &RegisterPropertiesGroup) {
+        self.register_properties = self.register_properties.merge(register_properties);
+        for r_or_c in &mut self.registers {
+            r_or_c.propagate_register_properties(&self.register_properties);
+        }
+    }
 }

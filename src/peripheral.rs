@@ -92,4 +92,14 @@ impl Peripheral {
             })
         }
     }
+
+    pub fn propagate_register_properties(&mut self,
+                                         register_properties: &RegisterPropertiesGroup) {
+        self.register_properties = self.register_properties.merge(register_properties);
+        if let Some(ref mut registers) = self.registers {
+            for r_or_c in registers {
+                r_or_c.propagate_register_properties(&self.register_properties);
+            }
+        }
+    }
 }

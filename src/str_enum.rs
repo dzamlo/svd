@@ -3,7 +3,7 @@ macro_rules! str_enum {
        str_enum!{$name, $( $str => $variant ),* }
     };
     ( $name:ident,  $( $str:expr => $variant:ident ),* ) => {
-        #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
+        #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
         pub enum $name {
             $($variant),*
         }

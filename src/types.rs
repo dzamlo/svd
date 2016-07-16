@@ -3,7 +3,7 @@ use std::str::FromStr;
 
 pub type IdentifierType = String;
 
-#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct ScaledNonNegativeInteger(pub u64);
 
 impl FromStr for ScaledNonNegativeInteger {
