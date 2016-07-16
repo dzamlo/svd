@@ -84,4 +84,18 @@ impl Register {
 
         }
     }
+
+    pub fn is_read(&self) -> bool {
+        match self.register_properties.access {
+            Some(ref access) => access.is_read(),
+            None => true,
+        }
+    }
+
+    pub fn is_write(&self) -> bool {
+        match self.register_properties.access {
+            Some(ref access) => access.is_write(),
+            None => true,
+        }
+    }
 }

@@ -8,3 +8,21 @@ str_enum!{Access,
     "writeOnce" => WriteOnce,
     "read-writeOnce" => ReadWriteOnce
 }
+
+impl Access {
+    pub fn is_read(&self) -> bool {
+        match *self {
+            Access::ReadOnly | Access::ReadWrite | Access::ReadWriteOnce => true,
+            Access::WriteOnly | Access::WriteOnce => false,
+        }
+    }
+
+    pub fn is_write(&self) -> bool {
+        match *self {
+            Access::ReadOnly => false,
+            Access::WriteOnly | Access::ReadWrite | Access::WriteOnce | Access::ReadWriteOnce => {
+                true
+            }
+        }
+    }
+}
