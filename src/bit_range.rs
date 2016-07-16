@@ -37,7 +37,7 @@ impl BitRange {
                 msb: msb,
             })
         } else if let Some(bit_range) = bit_range {
-            let colon_pos = bit_range.find(":");
+            let colon_pos = bit_range.find(':');
             if !bit_range.starts_with('[') || !bit_range.ends_with(']') || colon_pos.is_none() {
                 Err(FromElementError::InvalidFormat)
             } else {

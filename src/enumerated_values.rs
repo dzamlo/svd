@@ -61,7 +61,7 @@ impl EnumeratedValueData {
         if let Some(is_default) = get_child_text(element, "isDefault") {
             match &*is_default {
                 "true" => Ok(EnumeratedValueData::IsDefault(true)),
-                "false" => Ok(EnumeratedValueData::IsDefault(true)),
+                "false" => Ok(EnumeratedValueData::IsDefault(false)),
                 _ => Err(FromElementError::InvalidFormat),
             }
         } else if let Some(value) = get_child_text(element, "value") {

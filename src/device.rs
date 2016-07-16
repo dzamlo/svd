@@ -8,6 +8,8 @@ use types::*;
 use utils::get_child_text;
 use xmltree;
 
+pub type PeripheralsMap<'a, 'b> = HashMap<&'a str, &'b Peripheral>;
+
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct Device {
     pub vendor: Option<String>,
@@ -90,7 +92,7 @@ impl Device {
         }
     }
 
-    pub fn peripherals_map(&self) -> HashMap<&str, &Peripheral> {
+    pub fn peripherals_map(&self) -> PeripheralsMap {
         self.peripherals.iter().map(|p| (&*p.name, p)).collect()
     }
 
