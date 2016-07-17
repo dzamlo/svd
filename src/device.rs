@@ -1,5 +1,6 @@
 use cpu::Cpu;
 use error::{FromElementError, ParseError};
+use interrupt::Interrupt;
 use peripheral::Peripheral;
 use register_properties_group::RegisterPropertiesGroup;
 use std::collections::HashMap;
@@ -100,5 +101,10 @@ impl Device {
         for peripheral in &mut self.peripherals {
             peripheral.propagate_register_properties(&self.register_properties);
         }
+    }
+
+    /// Returns the interrupts of all the peripherals of the device.
+    pub fn interrupts(&self) -> Vec<&Interrupt> {
+        self.peripherals.iter().flat_map(|p| &p.interrupts).collect()
     }
 }
