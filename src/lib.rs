@@ -24,3 +24,5 @@ pub mod register;
 pub mod register_or_cluster;
 pub mod register_properties_group;
 pub mod types;
+
+pub mod codegen;
