@@ -14,6 +14,16 @@ macro_rules! write_line {
     }};
 }
 
+fn size_to_rust_type(size: u64) -> Result<&'static str, CodegenError> {
+    match size {
+        8 => Ok("u8"),
+        16 => Ok("u16"),
+        32 => Ok("u32"),
+        64 => Ok("u64"),
+        _ => Err(CodegenError::UnsupportedFeature)
+    }
+}
+
 #[derive(Clone, Debug)]
 pub struct CodeGenerator<W: Write> {
     indentation_level: u32,
@@ -99,16 +109,18 @@ impl<W: Write> CodeGenerator<W> {
 
     pub fn generate_register(&mut self, r: &Register, p: &Peripheral) -> Result<(), CodegenError> {
         let address = p.base_address.0 + r.address_offset.0;
+        let size = r.register_properties.size.map(|s| s.0).unwrap_or(32);
+        let ty = try!(size_to_rust_type(size));
         if r.is_read() {
-            write_line!(self, "pub unsafe fn {}() -> u32 {{", r.name);
-            write_line!(self, "    let ptr = 0x{:x} as *const u32;", address);
+            write_line!(self, "pub unsafe fn {}() -> {} {{", r.name, ty);
+            write_line!(self, "    let ptr = 0x{:x} as *const {};", address, ty);
             write_line!(self, "    core::ptr::read_volatile(ptr)");
             write_line!(self, "}}");
         }
 
         if r.is_write() {
-            write_line!(self, "pub unsafe fn set_{}(value: u32) {{", r.name);
-            write_line!(self, "    let ptr = 0x{:x} as *mut u32;", address);
+            write_line!(self, "pub unsafe fn set_{}(value: {}) {{", r.name, ty);
+            write_line!(self, "    let ptr = 0x{:x} as *mut {};", address, ty);
             write_line!(self, "    core::ptr::write_volatile(ptr, value)");
             write_line!(self, "}}");
         }
@@ -119,8 +131,8 @@ impl<W: Write> CodeGenerator<W> {
             "const"
         };
 
-        write_line!(self, "pub fn {}_ptr() -> *{} u32 {{", r.name, ptr_constness);
-        write_line!(self, "    0x{:x} as *{} u32", address, ptr_constness);
+        write_line!(self, "pub fn {}_ptr() -> *{} {} {{", r.name, ptr_constness, ty);
+        write_line!(self, "    0x{:x} as *{} {}", address, ptr_constness, ty);
         write_line!(self, "}}");
 
         Ok(())
