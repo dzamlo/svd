@@ -98,4 +98,8 @@ impl Register {
             None => true,
         }
     }
+
+    pub fn size(&self) -> u64 {
+        self.register_properties.size.map_or(32, |s| s.0)
+    }
 }

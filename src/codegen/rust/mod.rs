@@ -1,5 +1,6 @@
 use device::{Device, PeripheralsMap};
 use codegen::error::CodegenError;
+use field::Field;
 use std::io::Write;
 use peripheral::Peripheral;
 use register::Register;
@@ -20,7 +21,7 @@ fn size_to_rust_type(size: u64) -> Result<&'static str, CodegenError> {
         16 => Ok("u16"),
         32 => Ok("u32"),
         64 => Ok("u64"),
-        _ => Err(CodegenError::UnsupportedFeature)
+        _ => Err(CodegenError::UnsupportedFeature),
     }
 }
 
@@ -28,6 +29,7 @@ fn size_to_rust_type(size: u64) -> Result<&'static str, CodegenError> {
 pub struct CodeGenerator<W: Write> {
     indentation_level: u32,
     out: W,
+    with_field: bool,
 }
 
 impl<W: Write> CodeGenerator<W> {
@@ -35,7 +37,13 @@ impl<W: Write> CodeGenerator<W> {
         CodeGenerator {
             indentation_level: 0,
             out: out,
+            with_field: true,
         }
+    }
+
+    pub fn with_field(mut self, with_field: bool) -> CodeGenerator<W> {
+        self.with_field = with_field;
+        self
     }
 
     fn write_indentation(&mut self) -> Result<(), io::Error> {
@@ -109,19 +117,45 @@ impl<W: Write> CodeGenerator<W> {
 
     pub fn generate_register(&mut self, r: &Register, p: &Peripheral) -> Result<(), CodegenError> {
         let address = p.base_address.0 + r.address_offset.0;
-        let size = r.register_properties.size.map(|s| s.0).unwrap_or(32);
-        let ty = try!(size_to_rust_type(size));
+        let mut ty = try!(size_to_rust_type(r.size()));
+        let has_field = match r.fields {
+            Some(ref fields) => !fields.is_empty(),
+            None => false,
+        };
+        let with_field = self.with_field && has_field;
+        if with_field {
+            write_line!(self, "pub struct {}(pub {});", r.name, ty);
+            write_line!(self, "impl From<{}> for {} {{", ty, r.name);
+            write_line!(self, "    fn from(value: {}) -> {} {{", ty, r.name);
+            write_line!(self, "        {}(value)", r.name);
+            write_line!(self, "    }}");
+            write_line!(self, "}}");
+            write_line!(self, "impl {} {{", r.name);
+            self.indent();
+            let fields = r.fields.as_ref().unwrap();
+            for field in fields {
+                try!(self.generate_field(field, r, ty))
+            }
+            self.deindent();
+            write_line!(self, "}}");
+
+            ty = &*r.name;
+        }
+
         if r.is_read() {
-            write_line!(self, "pub unsafe fn {}() -> {} {{", r.name, ty);
+            write_line!(self, "pub unsafe fn read_{}() -> {} {{", r.name, ty);
             write_line!(self, "    let ptr = 0x{:x} as *const {};", address, ty);
             write_line!(self, "    core::ptr::read_volatile(ptr)");
             write_line!(self, "}}");
         }
 
         if r.is_write() {
-            write_line!(self, "pub unsafe fn set_{}(value: {}) {{", r.name, ty);
+            write_line!(self,
+                        "pub unsafe fn write_{}<T: Into<{}>>(value: T) {{",
+                        r.name,
+                        ty);
             write_line!(self, "    let ptr = 0x{:x} as *mut {};", address, ty);
-            write_line!(self, "    core::ptr::write_volatile(ptr, value)");
+            write_line!(self, "    core::ptr::write_volatile(ptr, value.into())");
             write_line!(self, "}}");
         }
 
@@ -131,10 +165,46 @@ impl<W: Write> CodeGenerator<W> {
             "const"
         };
 
-        write_line!(self, "pub fn {}_ptr() -> *{} {} {{", r.name, ptr_constness, ty);
+        write_line!(self,
+                    "pub fn {}_ptr() -> *{} {} {{",
+                    r.name,
+                    ptr_constness,
+                    ty);
         write_line!(self, "    0x{:x} as *{} {}", address, ptr_constness, ty);
         write_line!(self, "}}");
 
+        Ok(())
+    }
+
+    pub fn generate_field(&mut self,
+                          f: &Field,
+                          r: &Register,
+                          ty: &str)
+                          -> Result<(), CodegenError> {
+        let register_size = r.size();
+        let msb = f.bit_range.msb;
+        let lsb = f.bit_range.lsb;
+        let field_width = msb - lsb + 1;
+        if f.is_read() {
+            write_line!(self, "pub fn {}(&self) -> {} {{", f.name, ty);
+            write_line!(self,
+                        "    (self.0 << ({register_size} - {msb} - 1)) >> ({register_size} - \
+                         {msb} - 1 + {lsb})",
+                        register_size = register_size,
+                        msb = msb,
+                        lsb = lsb);
+            write_line!(self, "}}");
+        }
+
+        if f.is_write() {
+            let mask = ((1u64 << field_width) - 1) << lsb;
+            write_line!(self, "pub fn set_{}(&mut self, value: {}) {{", f.name, ty);
+            write_line!(self, "    let mask = {};", mask);
+            write_line!(self,
+                        "    self.0 = (self.0 & !mask) | ((value << {lsb}) & mask);",
+                        lsb = lsb);
+            write_line!(self, "}}");
+        }
         Ok(())
     }
 }

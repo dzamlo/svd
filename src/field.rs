@@ -66,4 +66,18 @@ impl Field {
         }
 
     }
+
+    pub fn is_read(&self) -> bool {
+        match self.access {
+            Some(ref access) => access.is_read(),
+            None => true,
+        }
+    }
+
+    pub fn is_write(&self) -> bool {
+        match self.access {
+            Some(ref access) => access.is_write(),
+            None => true,
+        }
+    }
 }
