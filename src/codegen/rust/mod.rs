@@ -126,7 +126,12 @@ impl<W: Write> CodeGenerator<W> {
         let address = p.base_address.0 + r.address_offset.0;
         let mut ty = try!(size_to_rust_type(r.size()));
         let has_field = match r.fields {
-            Some(ref fields) => !fields.is_empty(),
+            Some(ref fields) => {
+                // If there is only one field and this field use all the bits of the register, do
+                // not create a structure for it.
+                !fields.is_empty() &&
+                (fields.len() > 1 || fields[0].bit_range.width() as u64 != r.size())
+            }
             None => false,
         };
         let with_field = self.with_field && has_field;
