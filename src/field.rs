@@ -174,7 +174,7 @@ fn extract_prefix(name: &str) -> (&str, Option<usize>) {
 
 fn should_group(fields: &mut [(Field, Option<usize>)]) -> bool {
     if fields.len() > 1 && fields.iter().all(|&(_, suffix)| suffix.is_some()) {
-        fields.sort_by_key(|&(_, suffix)| suffix);
+        fields.sort_by_key(|&(ref field, _)| field.bit_range.lsb);
         let suffix_correct =
             fields.iter().enumerate().all(|(idx, &(_, suffix))| suffix == Some(idx));
         let width = fields[0].0.bit_range.width();
