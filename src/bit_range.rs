@@ -53,4 +53,8 @@ impl BitRange {
             Err(FromElementError::MissingField)
         }
     }
+
+    pub fn width(&self) -> u32 {
+        self.msb - self.lsb + 1
+    }
 }

@@ -1,6 +1,6 @@
 use device::{Device, PeripheralsMap};
 use codegen::error::CodegenError;
-use field::Field;
+use field::{Field, FieldsGroup};
 use std::io::Write;
 use peripheral::Peripheral;
 use register::Register;
@@ -30,6 +30,7 @@ pub struct CodeGenerator<W: Write> {
     indentation_level: u32,
     out: W,
     with_field: bool,
+    group_fields: bool,
 }
 
 impl<W: Write> CodeGenerator<W> {
@@ -38,11 +39,17 @@ impl<W: Write> CodeGenerator<W> {
             indentation_level: 0,
             out: out,
             with_field: true,
+            group_fields: true,
         }
     }
 
     pub fn with_field(mut self, with_field: bool) -> CodeGenerator<W> {
         self.with_field = with_field;
+        self
+    }
+
+    pub fn group_fields(mut self, group_fields: bool) -> CodeGenerator<W> {
+        self.group_fields = group_fields;
         self
     }
 
@@ -133,8 +140,18 @@ impl<W: Write> CodeGenerator<W> {
             write_line!(self, "impl {} {{", r.name);
             self.indent();
             let fields = r.fields.as_ref().unwrap();
-            for field in fields {
-                try!(self.generate_field(field, r, ty))
+            if self.group_fields {
+                let (groups, individuals) = FieldsGroup::from_fields(fields);
+                for group in &groups {
+                    try!(self.generate_fields_group(group, ty));
+                }
+                for field in &individuals {
+                    try!(self.generate_field(field, r, ty));
+                }
+            } else {
+                for field in fields {
+                    try!(self.generate_field(field, r, ty));
+                }
             }
             self.deindent();
             write_line!(self, "}}");
@@ -203,6 +220,41 @@ impl<W: Write> CodeGenerator<W> {
             write_line!(self,
                         "    self.0 = (self.0 & !mask) | ((value << {lsb}) & mask);",
                         lsb = lsb);
+            write_line!(self, "}}");
+        }
+        Ok(())
+    }
+
+    pub fn generate_fields_group(&mut self, g: &FieldsGroup, ty: &str) -> Result<(), CodegenError> {
+        let mask = (1u64 << g.width()) - 1;
+        if g.is_read() {
+            write_line!(self,
+                        "pub fn {}(&self, index: usize) -> {} {{",
+                        g.prefix(),
+                        ty);
+            write_line!(self, "   assert!(index < {});", g.count());
+            write_line!(self,
+                        "    let lsb = {} + index * {};",
+                        g.lsb(),
+                        g.lsb_increment());
+            write_line!(self, "    let mask = {} << lsb;", mask);
+            write_line!(self, "    (self.0 & mask) >> lsb");
+            write_line!(self, "}}");
+        }
+
+        if g.is_write() {
+            write_line!(self,
+                        "pub fn set_{}(&mut self, index: usize, value: {}) {{",
+                        g.prefix(),
+                        ty);
+            write_line!(self, "    assert!(index < {});", g.count());
+            write_line!(self,
+                        "    let lsb = {} + index * {};",
+                        g.lsb(),
+                        g.lsb_increment());
+            write_line!(self, "    let mask = {} << lsb;", mask);
+            write_line!(self,
+                        "    self.0 = (self.0 & !mask) | ((value << lsb) & mask);");
             write_line!(self, "}}");
         }
         Ok(())
