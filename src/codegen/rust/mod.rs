@@ -96,7 +96,7 @@ impl<W: Write> CodeGenerator<W> {
                                p: &Peripheral,
                                peripherals_map: &PeripheralsMap)
                                -> Result<(), CodegenError> {
-        write_line!(self, "pub mod  {} {{", p.name);
+        write_line!(self, "pub mod {} {{", p.name);
         self.indent();
         write_line!(self, "use core;");
         try!(self.generate_peripheral_registers(p, p, peripherals_map));
