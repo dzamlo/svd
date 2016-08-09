@@ -31,6 +31,7 @@ pub struct CodeGenerator<W: Write> {
     out: W,
     with_field: bool,
     group_fields: bool,
+    bool_field: bool,
 }
 
 impl<W: Write> CodeGenerator<W> {
@@ -40,6 +41,7 @@ impl<W: Write> CodeGenerator<W> {
             out: out,
             with_field: true,
             group_fields: true,
+            bool_field: true,
         }
     }
 
@@ -50,6 +52,11 @@ impl<W: Write> CodeGenerator<W> {
 
     pub fn group_fields(mut self, group_fields: bool) -> CodeGenerator<W> {
         self.group_fields = group_fields;
+        self
+    }
+
+    pub fn bool_field(mut self, bool_field: bool) -> CodeGenerator<W> {
+        self.bool_field = bool_field;
         self
     }
 
@@ -151,11 +158,11 @@ impl<W: Write> CodeGenerator<W> {
                     try!(self.generate_fields_group(group, ty));
                 }
                 for field in &individuals {
-                    try!(self.generate_field(field, r, ty));
+                    try!(self.generate_field(field, ty));
                 }
             } else {
                 for field in fields {
-                    try!(self.generate_field(field, r, ty));
+                    try!(self.generate_field(field, ty));
                 }
             }
             self.deindent();
@@ -198,52 +205,84 @@ impl<W: Write> CodeGenerator<W> {
         Ok(())
     }
 
-    pub fn generate_field(&mut self,
-                          f: &Field,
-                          r: &Register,
-                          ty: &str)
-                          -> Result<(), CodegenError> {
-        let register_size = r.size();
+    pub fn generate_bits_get(&mut self, lsb: &str, field_width: u32) -> Result<(), CodegenError> {
+        if self.bool_field && field_width == 1 {
+            write_line!(self, "(self.0 & (1 << {})) != 0", lsb);
+        } else {
+            let mask = (1u64 << field_width) - 1;
+            write_line!(self, "let mask = {} << {};", mask, lsb);
+            write_line!(self, "(self.0 & mask) >> {}", lsb);
+        }
+        Ok(())
+    }
+
+    pub fn generate_bits_set(&mut self, lsb: &str, field_width: u32) -> Result<(), CodegenError> {
+        if self.bool_field && field_width == 1 {
+            write_line!(self, "if value {{");
+            write_line!(self, "    self.0 |= 1 << {};", lsb);
+            write_line!(self, "}} else {{");
+            write_line!(self, "    self.0 &= !(1 << {});", lsb);
+            write_line!(self, "}}");
+        } else {
+            let mask = (1u64 << field_width) - 1;
+            write_line!(self, "let mask = {} << {};", mask, lsb);
+            write_line!(self,
+                        "self.0 = (self.0 & !mask) | ((value << {}) & mask)",
+                        lsb);
+        }
+        Ok(())
+    }
+
+    pub fn generate_field(&mut self, f: &Field, ty: &str) -> Result<(), CodegenError> {
         let msb = f.bit_range.msb;
         let lsb = f.bit_range.lsb;
         let field_width = msb - lsb + 1;
+        let ty = if self.bool_field && field_width == 1 {
+            "bool"
+        } else {
+            ty
+        };
+
         if f.is_read() {
             write_line!(self, "pub fn {}(&self) -> {} {{", f.name, ty);
-            write_line!(self,
-                        "    (self.0 << ({register_size} - {msb} - 1)) >> ({register_size} - \
-                         {msb} - 1 + {lsb})",
-                        register_size = register_size,
-                        msb = msb,
-                        lsb = lsb);
+            self.indent();
+            write_line!(self, "let lsb = {};", lsb);
+            try!(self.generate_bits_get("lsb", field_width));
+            self.deindent();
             write_line!(self, "}}");
         }
 
         if f.is_write() {
-            let mask = ((1u64 << field_width) - 1) << lsb;
             write_line!(self, "pub fn set_{}(&mut self, value: {}) {{", f.name, ty);
-            write_line!(self, "    let mask = {};", mask);
-            write_line!(self,
-                        "    self.0 = (self.0 & !mask) | ((value << {lsb}) & mask);",
-                        lsb = lsb);
+            self.indent();
+            write_line!(self, "let lsb = {};", lsb);
+            try!(self.generate_bits_set("lsb", field_width));
+            self.deindent();
             write_line!(self, "}}");
         }
         Ok(())
     }
 
     pub fn generate_fields_group(&mut self, g: &FieldsGroup, ty: &str) -> Result<(), CodegenError> {
-        let mask = (1u64 << g.width()) - 1;
+        let ty = if self.bool_field && g.width() == 1 {
+            "bool"
+        } else {
+            ty
+        };
+
         if g.is_read() {
             write_line!(self,
                         "pub fn {}(&self, index: usize) -> {} {{",
                         g.prefix(),
                         ty);
-            write_line!(self, "   assert!(index < {});", g.count());
+            self.indent();
+            write_line!(self, "assert!(index < {});", g.count());
             write_line!(self,
-                        "    let lsb = {} + index * {};",
+                        "let lsb = {} + index * {};",
                         g.lsb(),
                         g.lsb_increment());
-            write_line!(self, "    let mask = {} << lsb;", mask);
-            write_line!(self, "    (self.0 & mask) >> lsb");
+            try!(self.generate_bits_get("lsb", g.width()));
+            self.deindent();
             write_line!(self, "}}");
         }
 
@@ -252,14 +291,14 @@ impl<W: Write> CodeGenerator<W> {
                         "pub fn set_{}(&mut self, index: usize, value: {}) {{",
                         g.prefix(),
                         ty);
-            write_line!(self, "    assert!(index < {});", g.count());
+            self.indent();
+            write_line!(self, "assert!(index < {});", g.count());
             write_line!(self,
-                        "    let lsb = {} + index * {};",
+                        "let lsb = {} + index * {};",
                         g.lsb(),
                         g.lsb_increment());
-            write_line!(self, "    let mask = {} << lsb;", mask);
-            write_line!(self,
-                        "    self.0 = (self.0 & !mask) | ((value << lsb) & mask);");
+            try!(self.generate_bits_set("lsb", g.width()));
+            self.deindent();
             write_line!(self, "}}");
         }
         Ok(())
