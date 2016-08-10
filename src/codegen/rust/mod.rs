@@ -45,16 +45,19 @@ impl<W: Write> CodeGenerator<W> {
         }
     }
 
+    /// If true, generates structs to access the fields of the registers.
     pub fn with_field(mut self, with_field: bool) -> CodeGenerator<W> {
         self.with_field = with_field;
         self
     }
 
+    /// If true, some fields are grouped and can be accessed with an index.
     pub fn group_fields(mut self, group_fields: bool) -> CodeGenerator<W> {
         self.group_fields = group_fields;
         self
     }
 
+    /// If true, use `bool` for single bit fields.
     pub fn bool_field(mut self, bool_field: bool) -> CodeGenerator<W> {
         self.bool_field = bool_field;
         self
