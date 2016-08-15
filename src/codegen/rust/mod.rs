@@ -84,7 +84,7 @@ impl<W: Write> CodeGenerator<W> {
         write_line!(self, "#[allow(non_snake_case)]");
         write_line!(self, "#[allow(dead_code)]");
         write_line!(self, "#[allow(non_camel_case_types)]");
-        write_line!(self, "mod {} {{", d.name);
+        write_line!(self, "pub mod {} {{", d.name);
         self.indent();
         let peripherals_map = d.peripherals_map();
         for p in &d.peripherals {
