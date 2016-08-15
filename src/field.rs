@@ -6,7 +6,7 @@ use modified_write_values::ModifiedWriteValues;
 use read_action::ReadAction;
 use std::collections::HashMap;
 use types::*;
-use utils::get_child_text;
+use utils::{extract_prefix, get_child_text};
 use xmltree;
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
@@ -163,15 +163,6 @@ impl FieldsGroup {
     }
 }
 
-fn extract_prefix(name: &str) -> (&str, Option<usize>) {
-    let prefix_end = name.rfind(|c: char| !c.is_digit(10));
-    match prefix_end {
-        Some(prefix_end) => (&name[..prefix_end + 1], name[prefix_end + 1..].parse().ok()),
-        None => ("", name.parse().ok()),
-    }
-
-}
-
 fn should_group(fields: &mut [(Field, Option<usize>)]) -> bool {
     if fields.len() > 1 && fields.iter().all(|&(_, suffix)| suffix.is_some()) {
         fields.sort_by_key(|&(ref field, _)| field.bit_range.lsb);
@@ -188,20 +179,5 @@ fn should_group(fields: &mut [(Field, Option<usize>)]) -> bool {
         suffix_correct && same_width && same_lsb_increment && same_access
     } else {
         false
-    }
-    // false
-}
-
-#[cfg(test)]
-mod tests {
-    use super::extract_prefix;
-
-    #[test]
-    fn test_extract_prefix() {
-        assert_eq!(("", None), extract_prefix(""));
-        assert_eq!(("Foo", None), extract_prefix("Foo"));
-        assert_eq!(("Foo", Some(123)), extract_prefix("Foo123"));
-        assert_eq!(("Foo123Bar", Some(456)), extract_prefix("Foo123Bar456"));
-        assert_eq!(("", Some(456)), extract_prefix("456"));
     }
 }

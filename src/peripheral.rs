@@ -5,7 +5,7 @@ use interrupt::Interrupt;
 use register_or_cluster::RegisterOrCluster;
 use register_properties_group::RegisterPropertiesGroup;
 use types::*;
-use utils::get_child_text;
+use utils::{extract_prefix, get_child_text};
 use xmltree;
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
@@ -102,4 +102,95 @@ impl Peripheral {
             }
         }
     }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
+pub struct PeripheralsGroup {
+    struct_name: IdentifierType,
+    peripherals: Vec<Peripheral>,
+}
+
+impl PeripheralsGroup {
+    /// Group similar peripherals together.
+    pub fn from_peripherals<'a, I>(peripherals: I) -> (Vec<PeripheralsGroup>, Vec<Peripheral>)
+        where I: IntoIterator<Item = &'a Peripheral>
+    {
+        let mut groups: Vec<Vec<Peripheral>> = vec![];
+        for peripheral in peripherals {
+            let mut group_found = false;
+            for group in &mut groups {
+                if should_group(group, peripheral) {
+                    group.push(peripheral.clone());
+                    group_found = true;
+                    break;
+                }
+            }
+
+            if !group_found {
+                groups.push(vec![peripheral.clone()])
+            }
+        }
+
+        let mut groups2 = vec![];
+        let mut individuals = vec![];
+
+        for mut group in groups {
+            if group.len() == 1 {
+                individuals.append(&mut group);
+            } else {
+                let struct_name = struct_name(&group);
+                if struct_name.is_empty() {
+                    individuals.append(&mut group);
+                } else {
+                    groups2.push(PeripheralsGroup {
+                        struct_name: struct_name,
+                        peripherals: group,
+                    });
+                }
+            }
+        }
+
+        (groups2, individuals)
+    }
+
+    pub fn struct_name(&self) -> &str {
+        &*self.struct_name
+    }
+
+    pub fn peripherals(&self) -> &[Peripheral] {
+        &*self.peripherals
+    }
+}
+
+fn should_group(group: &[Peripheral], peripheral: &Peripheral) -> bool {
+    match peripheral.derived_from {
+        Some(ref derived_from) if derived_from == &group[0].name => true,
+        _ => false,
+    }
+}
+
+fn struct_name(peripherals: &[Peripheral]) -> IdentifierType {
+    for peripheral in peripherals {
+        if let Some(ref name) = peripheral.header_struct_name {
+            return name.clone();
+        }
+    }
+
+    if peripherals[0].name.chars().last().map_or(false, |c| c.is_digit(10)) {
+        return extract_prefix(&peripherals[0].name).0.into();
+    }
+
+    let mut names: Vec<_> = peripherals.iter().map(|p| p.name.chars()).collect();
+    let mut struct_name = String::new();
+    let min_len = peripherals.iter().map(|p| p.name.len()).min().unwrap_or(0);
+    for _ in 0..min_len {
+        let c = names[0].next();
+        if c.is_some() && names[1..].iter_mut().all(|name| name.next() == c) {
+            struct_name.push(c.unwrap());
+        } else {
+            break;
+        }
+    }
+
+    struct_name
 }
