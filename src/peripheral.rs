@@ -5,7 +5,7 @@ use interrupt::Interrupt;
 use register_or_cluster::RegisterOrCluster;
 use register_properties_group::RegisterPropertiesGroup;
 use types::*;
-use utils::{extract_prefix, get_child_text};
+use utils::{extract_prefix, get_child_text, IsSimilar};
 use xmltree;
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
@@ -104,6 +104,16 @@ impl Peripheral {
     }
 }
 
+impl<'a, 'b> IsSimilar<&'a Peripheral> for &'b Peripheral {
+    fn is_similar(self, other: &Peripheral) -> bool {
+        if let Some(ref derived_from) = other.derived_from {
+            return self.name == *derived_from || self.derived_from == other.derived_from;
+        }
+
+        self.registers.is_similar(&other.registers)
+    }
+}
+
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct PeripheralsGroup {
     struct_name: IdentifierType,
@@ -162,11 +172,14 @@ impl PeripheralsGroup {
     }
 }
 
-fn should_group(group: &[Peripheral], peripheral: &Peripheral) -> bool {
-    match peripheral.derived_from {
-        Some(ref derived_from) if derived_from == &group[0].name => true,
-        _ => false,
+fn should_group(group: &[Peripheral], new_peripheral: &Peripheral) -> bool {
+    for peripheral in group {
+        if peripheral.is_similar(new_peripheral) {
+            return true;
+        }
     }
+
+    false
 }
 
 fn struct_name(peripherals: &[Peripheral]) -> IdentifierType {

@@ -2,6 +2,7 @@ use cluster::Cluster;
 use error::FromElementError;
 use register::Register;
 use register_properties_group::RegisterPropertiesGroup;
+use utils::IsSimilar;
 use xmltree;
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
@@ -28,6 +29,20 @@ impl RegisterOrCluster {
             RegisterOrCluster::Cluster(ref mut c) => {
                 c.propagate_register_properties(register_properties)
             }
+        }
+    }
+}
+
+impl<'a, 'b> IsSimilar<&'a RegisterOrCluster> for &'b RegisterOrCluster {
+    fn is_similar(self, other: &RegisterOrCluster) -> bool {
+        match (self, other) {
+            (&RegisterOrCluster::Register(ref r1), &RegisterOrCluster::Register(ref r2)) => {
+                r1.is_similar(r2)
+            }
+            (&RegisterOrCluster::Cluster(ref c1), &RegisterOrCluster::Cluster(ref c2)) => {
+                c1.is_similar(c2)
+            }
+            _ => false,
         }
     }
 }

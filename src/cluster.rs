@@ -3,7 +3,7 @@ use error::FromElementError;
 use register_or_cluster::RegisterOrCluster;
 use register_properties_group::RegisterPropertiesGroup;
 use types::*;
-use utils::get_child_text;
+use utils::{get_child_text, IsSimilar};
 use xmltree;
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
@@ -59,5 +59,13 @@ impl Cluster {
         for r_or_c in &mut self.registers {
             r_or_c.propagate_register_properties(&self.register_properties);
         }
+    }
+}
+
+impl<'a, 'b> IsSimilar<&'a Cluster> for &'b Cluster {
+    fn is_similar(self, other: &Cluster) -> bool {
+        self.name == other.name && self.address_offset == other.address_offset &&
+        self.register_properties == other.register_properties &&
+        self.registers.is_similar(&other.registers)
     }
 }

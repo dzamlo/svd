@@ -6,7 +6,7 @@ use modified_write_values::ModifiedWriteValues;
 use read_action::ReadAction;
 use std::collections::HashMap;
 use types::*;
-use utils::{extract_prefix, get_child_text};
+use utils::{extract_prefix, get_child_text, IsSimilar};
 use xmltree;
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
@@ -80,6 +80,16 @@ impl Field {
             Some(ref access) => access.is_write(),
             None => true,
         }
+    }
+}
+
+impl<'a, 'b> IsSimilar<&'a Field> for &'b Field {
+    fn is_similar(self, other: &Field) -> bool {
+        self.name == other.name && self.bit_range == other.bit_range &&
+        self.access == other.access &&
+        self.modified_write_values == other.modified_write_values &&
+        self.read_action == other.read_action &&
+        self.enumerated_values == other.enumerated_values
     }
 }
 

@@ -6,7 +6,7 @@ use modified_write_values::ModifiedWriteValues;
 use read_action::ReadAction;
 use register_properties_group::RegisterPropertiesGroup;
 use types::*;
-use utils::get_child_text;
+use utils::{get_child_text, IsSimilar};
 use xmltree;
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
@@ -101,5 +101,14 @@ impl Register {
 
     pub fn size(&self) -> u64 {
         self.register_properties.size.map_or(32, |s| s.0)
+    }
+}
+
+impl<'a, 'b> IsSimilar<&'a Register> for &'b Register {
+    fn is_similar(self, other: &Register) -> bool {
+        self.name == other.name && self.address_offset == other.address_offset &&
+        self.register_properties.is_similar(&other.register_properties) &&
+        self.modified_write_values == other.modified_write_values &&
+        self.read_action == other.read_action && self.fields.is_similar(&other.fields)
     }
 }
