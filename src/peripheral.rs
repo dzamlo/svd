@@ -5,7 +5,7 @@ use interrupt::Interrupt;
 use register_or_cluster::RegisterOrCluster;
 use register_properties_group::RegisterPropertiesGroup;
 use types::*;
-use utils::{extract_prefix, get_child_text, IsSimilar};
+use utils::{extract_prefix, get_child_text, IsSimilar, IsSimilarOptions};
 use xmltree;
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
@@ -105,12 +105,12 @@ impl Peripheral {
 }
 
 impl<'a, 'b> IsSimilar<&'a Peripheral> for &'b Peripheral {
-    fn is_similar(self, other: &Peripheral) -> bool {
+    fn is_similar(self, other: &Peripheral, options: &IsSimilarOptions) -> bool {
         if let Some(ref derived_from) = other.derived_from {
             return self.name == *derived_from || self.derived_from == other.derived_from;
         }
 
-        self.registers.is_similar(&other.registers)
+        self.registers.is_similar(&other.registers, options)
     }
 }
 
@@ -122,14 +122,16 @@ pub struct PeripheralsGroup {
 
 impl PeripheralsGroup {
     /// Group similar peripherals together.
-    pub fn from_peripherals<'a, I>(peripherals: I) -> (Vec<PeripheralsGroup>, Vec<Peripheral>)
+    pub fn from_peripherals<'a, I>(peripherals: I,
+                                   options: &IsSimilarOptions)
+                                   -> (Vec<PeripheralsGroup>, Vec<Peripheral>)
         where I: IntoIterator<Item = &'a Peripheral>
     {
         let mut groups: Vec<Vec<Peripheral>> = vec![];
         for peripheral in peripherals {
             let mut group_found = false;
             for group in &mut groups {
-                if should_group(group, peripheral) {
+                if should_group(group, peripheral, options) {
                     group.push(peripheral.clone());
                     group_found = true;
                     break;
@@ -172,9 +174,12 @@ impl PeripheralsGroup {
     }
 }
 
-fn should_group(group: &[Peripheral], new_peripheral: &Peripheral) -> bool {
+fn should_group(group: &[Peripheral],
+                new_peripheral: &Peripheral,
+                options: &IsSimilarOptions)
+                -> bool {
     for peripheral in group {
-        if peripheral.is_similar(new_peripheral) {
+        if peripheral.is_similar(new_peripheral, options) {
             return true;
         }
     }

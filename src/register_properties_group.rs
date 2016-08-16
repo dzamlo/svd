@@ -2,7 +2,7 @@ use access::Access;
 use error::FromElementError;
 use protection::Protection;
 use types::*;
-use utils::{get_child_text, IsSimilar};
+use utils::{get_child_text, IsSimilar, IsSimilarOptions};
 use xmltree;
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
@@ -58,7 +58,7 @@ impl RegisterPropertiesGroup {
 }
 
 impl<'a, 'b> IsSimilar<&'a RegisterPropertiesGroup> for &'b RegisterPropertiesGroup {
-    fn is_similar(self, other: &RegisterPropertiesGroup) -> bool {
+    fn is_similar(self, other: &RegisterPropertiesGroup, _options: &IsSimilarOptions) -> bool {
         self.size == other.size && self.access == other.access &&
         self.protection == other.protection
     }
