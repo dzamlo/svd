@@ -182,6 +182,16 @@ impl PeripheralsGroup {
     pub fn peripherals(&self) -> &[Peripheral] {
         &*self.peripherals
     }
+
+    pub fn description(&self) -> &Option<String> {
+        for peripheral in self.peripherals() {
+            if peripheral.description.is_some() {
+                return &peripheral.description;
+            }
+        }
+
+        &self.peripherals()[0].description
+    }
 }
 
 fn make_names_unique(groups: &mut [PeripheralsGroup], individuals: &mut [Peripheral]) {

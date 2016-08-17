@@ -105,6 +105,7 @@ pub struct FieldsGroup {
     width: u32,
     count: usize,
     lsb_increment: u32,
+    description: Option<String>,
     access: Option<Access>,
 }
 
@@ -126,6 +127,13 @@ impl FieldsGroup {
             if !prefix.is_empty() && should_group(&mut fields) {
                 let first = &fields[0].0;
                 let second = &fields[1].0;
+                let mut description = None;
+                for &(ref field, _) in &fields {
+                    if field.description.is_some() {
+                        description = field.description.clone();
+                        break;
+                    }
+                }
                 groups.push(FieldsGroup {
                     prefix: prefix,
                     lsb: first.bit_range.lsb,
@@ -133,6 +141,7 @@ impl FieldsGroup {
                     count: fields.len(),
                     lsb_increment: second.bit_range.lsb - first.bit_range.lsb,
                     access: first.access,
+                    description: description,
                 });
             } else {
                 for (field, _) in fields {
@@ -175,6 +184,10 @@ impl FieldsGroup {
     }
     pub fn access(&self) -> Option<Access> {
         self.access
+    }
+
+    pub fn description(&self) -> &Option<String> {
+        &self.description
     }
 }
 

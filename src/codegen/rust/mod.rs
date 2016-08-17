@@ -2,6 +2,7 @@ use device::{Device, PeripheralsMap};
 use codegen::error::CodegenError;
 use field::{Field, FieldsGroup};
 use is_similar::IsSimilarOptions;
+use std::fmt::Display;
 use std::io::Write;
 use peripheral::{Peripheral, PeripheralsGroup};
 use register::Register;
@@ -34,6 +35,7 @@ pub struct CodeGenerator<W: Write> {
     group_fields: bool,
     bool_field: bool,
     group_peripherals: bool,
+    with_doc: bool,
 }
 
 impl<W: Write> CodeGenerator<W> {
@@ -45,6 +47,7 @@ impl<W: Write> CodeGenerator<W> {
             group_fields: true,
             bool_field: true,
             group_peripherals: true,
+            with_doc: true,
         }
     }
 
@@ -72,6 +75,12 @@ impl<W: Write> CodeGenerator<W> {
         self
     }
 
+    /// If true, add doc comment with content from the description fields
+    pub fn with_doc(mut self, with_doc: bool) -> CodeGenerator<W> {
+        self.with_doc = with_doc;
+        self
+    }
+
     fn write_indentation(&mut self) -> Result<(), io::Error> {
         for _ in 0..self.indentation_level {
             try!(write!(self.out, "    "));
@@ -89,10 +98,20 @@ impl<W: Write> CodeGenerator<W> {
         }
     }
 
+    pub fn generate_doc<D: Display>(&mut self, doc: &Option<D>) -> Result<(), CodegenError> {
+        if self.with_doc {
+            if let Some(ref doc) = *doc {
+                write_line!(self, "#[doc = \"{}\"]", doc);
+            }
+        }
+        Ok(())
+    }
+
     pub fn generate_device(&mut self, d: &Device) -> Result<(), CodegenError> {
         write_line!(self, "#[allow(non_snake_case)]");
         write_line!(self, "#[allow(dead_code)]");
         write_line!(self, "#[allow(non_camel_case_types)]");
+        try!(self.generate_doc(&Some(&d.description)));
         write_line!(self, "pub mod {} {{", d.name);
         self.indent();
         let peripherals_map = d.peripherals_map();
@@ -125,7 +144,7 @@ impl<W: Write> CodeGenerator<W> {
     pub fn generate_peripherals_group(&mut self,
                                       pg: &PeripheralsGroup)
                                       -> Result<(), CodegenError> {
-
+        try!(self.generate_doc(&pg.description()));
         write_line!(self, "pub mod {} {{", pg.module_name());
         self.indent();
         write_line!(self, "use core;");
@@ -162,6 +181,7 @@ impl<W: Write> CodeGenerator<W> {
                                p: &Peripheral,
                                peripherals_map: &PeripheralsMap)
                                -> Result<(), CodegenError> {
+        try!(self.generate_doc(&p.description));
         write_line!(self, "pub mod {} {{", p.name);
         self.indent();
         write_line!(self, "use core;");
@@ -200,6 +220,7 @@ impl<W: Write> CodeGenerator<W> {
         let ty = try!(self.generate_fields(r));
 
         if r.is_read() {
+            try!(self.generate_doc(&r.description));
             write_line!(self, "pub unsafe fn read_{}() -> {} {{", r.name, ty);
             write_line!(self, "    let ptr = 0x{:x} as *const {};", address, ty);
             write_line!(self, "    core::ptr::read_volatile(ptr)");
@@ -207,6 +228,7 @@ impl<W: Write> CodeGenerator<W> {
         }
 
         if r.is_write() {
+            try!(self.generate_doc(&r.description));
             write_line!(self,
                         "pub unsafe fn write_{}<T: Into<{}>>(value: T) {{",
                         r.name,
@@ -222,6 +244,7 @@ impl<W: Write> CodeGenerator<W> {
             "const"
         };
 
+        try!(self.generate_doc(&r.description));
         write_line!(self,
                     "pub fn {}_ptr() -> *{} {} {{",
                     r.name,
@@ -241,6 +264,7 @@ impl<W: Write> CodeGenerator<W> {
         write_line!(self, "impl {} {{", pg.struct_name());
         self.indent();
         if r.is_read() {
+            try!(self.generate_doc(&r.description));
             write_line!(self, "pub unsafe fn read_{}(&self) -> {} {{", r.name, ty);
             write_line!(self,
                         "    let ptr = (self.base_address + {}) as * const {};",
@@ -251,6 +275,7 @@ impl<W: Write> CodeGenerator<W> {
         }
 
         if r.is_write() {
+            try!(self.generate_doc(&r.description));
             write_line!(self,
                         "pub unsafe fn write_{}<T: Into<{}>>(&self, value: T) {{",
                         r.name,
@@ -268,7 +293,7 @@ impl<W: Write> CodeGenerator<W> {
         } else {
             "const"
         };
-
+        try!(self.generate_doc(&r.description));
         write_line!(self,
                     "pub fn {}_ptr(&self) -> *{} {} {{",
                     r.name,
@@ -298,6 +323,7 @@ impl<W: Write> CodeGenerator<W> {
         };
         let with_field = self.with_field && has_field;
         if with_field {
+            try!(self.generate_doc(&r.description));
             write_line!(self, "pub struct {}(pub {});", r.name, ty);
             write_line!(self, "impl From<{}> for {} {{", ty, r.name);
             write_line!(self, "    fn from(value: {}) -> {} {{", ty, r.name);
@@ -368,6 +394,7 @@ impl<W: Write> CodeGenerator<W> {
         };
 
         if f.is_read() {
+            try!(self.generate_doc(&f.description));
             write_line!(self, "pub fn {}(&self) -> {} {{", f.name, ty);
             self.indent();
             write_line!(self, "let lsb = {};", lsb);
@@ -377,6 +404,7 @@ impl<W: Write> CodeGenerator<W> {
         }
 
         if f.is_write() {
+            try!(self.generate_doc(&f.description));
             write_line!(self, "pub fn set_{}(&mut self, value: {}) {{", f.name, ty);
             self.indent();
             write_line!(self, "let lsb = {};", lsb);
@@ -395,6 +423,7 @@ impl<W: Write> CodeGenerator<W> {
         };
 
         if g.is_read() {
+            try!(self.generate_doc(&g.description()));
             write_line!(self,
                         "pub fn {}(&self, index: usize) -> {} {{",
                         g.prefix(),
@@ -411,6 +440,7 @@ impl<W: Write> CodeGenerator<W> {
         }
 
         if g.is_write() {
+            try!(self.generate_doc(&g.description()));
             write_line!(self,
                         "pub fn set_{}(&mut self, index: usize, value: {}) {{",
                         g.prefix(),
