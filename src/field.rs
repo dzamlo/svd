@@ -2,11 +2,12 @@ use access::Access;
 use bit_range::BitRange;
 use enumerated_values::EnumeratedValues;
 use error::FromElementError;
+use is_similar::{IsSimilar, IsSimilarOptions};
 use modified_write_values::ModifiedWriteValues;
 use read_action::ReadAction;
 use std::collections::HashMap;
 use types::*;
-use utils::{extract_prefix, get_child_text, IsSimilar, IsSimilarOptions};
+use utils::{extract_prefix, get_child_text};
 use xmltree;
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]

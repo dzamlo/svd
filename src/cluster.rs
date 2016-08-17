@@ -1,9 +1,10 @@
 use dim_element_group::DimElementGroup;
 use error::FromElementError;
+use is_similar::{IsSimilar, IsSimilarOptions};
 use register_or_cluster::RegisterOrCluster;
 use register_properties_group::RegisterPropertiesGroup;
 use types::*;
-use utils::{get_child_text, IsSimilar, IsSimilarOptions};
+use utils::get_child_text;
 use xmltree;
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]

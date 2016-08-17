@@ -2,11 +2,12 @@ use dim_element_group::DimElementGroup;
 use data_type::DataType;
 use error::FromElementError;
 use field::Field;
+use is_similar::{IsSimilar, IsSimilarOptions};
 use modified_write_values::ModifiedWriteValues;
 use read_action::ReadAction;
 use register_properties_group::RegisterPropertiesGroup;
 use types::*;
-use utils::{get_child_text, IsSimilar, IsSimilarOptions};
+use utils::get_child_text;
 use xmltree;
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]

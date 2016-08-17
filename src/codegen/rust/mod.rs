@@ -1,11 +1,11 @@
 use device::{Device, PeripheralsMap};
 use codegen::error::CodegenError;
 use field::{Field, FieldsGroup};
+use is_similar::IsSimilarOptions;
 use std::io::Write;
 use peripheral::{Peripheral, PeripheralsGroup};
 use register::Register;
 use register_or_cluster::RegisterOrCluster;
-use utils;
 use std::io;
 
 
@@ -98,7 +98,7 @@ impl<W: Write> CodeGenerator<W> {
         let peripherals_map = d.peripherals_map();
 
         if self.group_peripherals {
-            let mut options = utils::IsSimilarOptions::new();
+            let mut options = IsSimilarOptions::new();
             options.set_ignore_fields(!self.with_field);
             let (groups, individuals) = PeripheralsGroup::from_peripherals(&d.peripherals,
                                                                            &options);

@@ -1,8 +1,8 @@
 use cluster::Cluster;
 use error::FromElementError;
+use is_similar::{IsSimilar, IsSimilarOptions};
 use register::Register;
 use register_properties_group::RegisterPropertiesGroup;
-use utils::{IsSimilar, IsSimilarOptions};
 use xmltree;
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]

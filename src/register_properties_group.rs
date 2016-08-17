@@ -1,8 +1,9 @@
 use access::Access;
 use error::FromElementError;
+use is_similar::{IsSimilar, IsSimilarOptions};
 use protection::Protection;
 use types::*;
-use utils::{get_child_text, IsSimilar, IsSimilarOptions};
+use utils::get_child_text;
 use xmltree;
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]

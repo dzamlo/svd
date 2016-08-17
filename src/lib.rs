@@ -26,3 +26,4 @@ pub mod register_properties_group;
 pub mod types;
 
 pub mod codegen;
+pub mod is_similar;
