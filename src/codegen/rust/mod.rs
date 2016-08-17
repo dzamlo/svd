@@ -126,7 +126,7 @@ impl<W: Write> CodeGenerator<W> {
                                       pg: &PeripheralsGroup)
                                       -> Result<(), CodegenError> {
 
-        write_line!(self, "pub mod {} {{", pg.struct_name());
+        write_line!(self, "pub mod {} {{", pg.module_name());
         self.indent();
         write_line!(self, "use core;");
         write_line!(self, "#[derive(Copy, Clone, PartialEq, Eq)]");

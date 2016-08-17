@@ -5,6 +5,7 @@ use interrupt::Interrupt;
 use is_similar::{IsSimilar, IsSimilarOptions};
 use register_or_cluster::RegisterOrCluster;
 use register_properties_group::RegisterPropertiesGroup;
+use std::collections::HashSet;
 use types::*;
 use utils::{extract_prefix, get_child_text};
 use xmltree;
@@ -117,6 +118,7 @@ impl<'a, 'b> IsSimilar<&'a Peripheral> for &'b Peripheral {
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct PeripheralsGroup {
+    module_name: IdentifierType,
     struct_name: IdentifierType,
     peripherals: Vec<Peripheral>,
 }
@@ -156,12 +158,15 @@ impl PeripheralsGroup {
                     individuals.append(&mut group);
                 } else {
                     groups2.push(PeripheralsGroup {
+                        module_name: struct_name.clone(),
                         struct_name: struct_name,
                         peripherals: group,
                     });
                 }
             }
         }
+
+        make_names_unique(&mut groups2, &mut individuals);
 
         (groups2, individuals)
     }
@@ -170,8 +175,38 @@ impl PeripheralsGroup {
         &*self.struct_name
     }
 
+    pub fn module_name(&self) -> &str {
+        &*self.module_name
+    }
+
     pub fn peripherals(&self) -> &[Peripheral] {
         &*self.peripherals
+    }
+}
+
+fn make_names_unique(groups: &mut [PeripheralsGroup], individuals: &mut [Peripheral]) {
+    let mut names = HashSet::new();
+    let mut duplicates_names = HashSet::new();
+
+    for name in individuals.iter().map(|p| &*p.name).chain(groups.iter().map(|g| &*g.module_name)) {
+        if !names.insert(name.to_string()) {
+            duplicates_names.insert(name.to_string());
+        }
+    }
+
+
+    for name in individuals.iter_mut()
+        .map(|p| &mut p.name)
+        .chain(groups.iter_mut().map(|g| &mut g.module_name)) {
+        if duplicates_names.contains(name) {
+            for i in 0.. {
+                let new_name = format!("{}_{}", name, i);
+                if names.insert(new_name.clone()) {
+                    *name = new_name;
+                    break;
+                }
+            }
+        }
     }
 }
 
