@@ -2,9 +2,10 @@ use device::{Device, PeripheralsMap};
 use codegen::error::CodegenError;
 use field::{Field, FieldsGroup};
 use std::io::Write;
-use peripheral::Peripheral;
+use peripheral::{Peripheral, PeripheralsGroup};
 use register::Register;
 use register_or_cluster::RegisterOrCluster;
+use utils;
 use std::io;
 
 
@@ -32,6 +33,7 @@ pub struct CodeGenerator<W: Write> {
     with_field: bool,
     group_fields: bool,
     bool_field: bool,
+    group_peripherals: bool,
 }
 
 impl<W: Write> CodeGenerator<W> {
@@ -42,6 +44,7 @@ impl<W: Write> CodeGenerator<W> {
             with_field: true,
             group_fields: true,
             bool_field: true,
+            group_peripherals: true,
         }
     }
 
@@ -60,6 +63,12 @@ impl<W: Write> CodeGenerator<W> {
     /// If true, use `bool` for single bit fields.
     pub fn bool_field(mut self, bool_field: bool) -> CodeGenerator<W> {
         self.bool_field = bool_field;
+        self
+    }
+
+    /// If true, some perpherals are grouped together and share a common `struct`
+    pub fn group_peripherals(mut self, group_peripherals: bool) -> CodeGenerator<W> {
+        self.group_peripherals = group_peripherals;
         self
     }
 
@@ -87,8 +96,62 @@ impl<W: Write> CodeGenerator<W> {
         write_line!(self, "pub mod {} {{", d.name);
         self.indent();
         let peripherals_map = d.peripherals_map();
-        for p in &d.peripherals {
-            try!(self.generate_peripheral(p, &peripherals_map));
+
+        if self.group_peripherals {
+            let mut options = utils::IsSimilarOptions::new();
+            options.set_ignore_fields(!self.with_field);
+            let (groups, individuals) = PeripheralsGroup::from_peripherals(&d.peripherals,
+                                                                           &options);
+
+            for group in &groups {
+                try!(self.generate_peripherals_group(group));
+            }
+
+            for p in &individuals {
+                try!(self.generate_peripheral(p, &peripherals_map));
+            }
+
+        } else {
+            for p in &d.peripherals {
+                try!(self.generate_peripheral(p, &peripherals_map));
+            }
+        }
+
+        self.deindent();
+        write_line!(self, "}}");
+        Ok(())
+    }
+
+    pub fn generate_peripherals_group(&mut self,
+                                      pg: &PeripheralsGroup)
+                                      -> Result<(), CodegenError> {
+
+        write_line!(self, "pub mod {} {{", pg.struct_name());
+        self.indent();
+        write_line!(self, "use core;");
+        write_line!(self, "#[derive(Copy, Clone, PartialEq, Eq)]");
+        write_line!(self,
+                    "pub struct {} {{ pub base_address: usize }}",
+                    pg.struct_name());
+        for peripheral in pg.peripherals() {
+            write_line!(self,
+                        "pub const {0}: {1} = {1} {{base_address: {2}}};",
+                        peripheral.name,
+                        pg.struct_name(),
+                        peripheral.base_address.0);
+        }
+
+        for peripheral in pg.peripherals() {
+            if let Some(ref registers) = peripheral.registers {
+                for r in registers {
+                    if let RegisterOrCluster::Register(ref r) = *r {
+                        try!(self.generate_register_for_group(r, pg));
+                    } else {
+                        return Err(CodegenError::UnsupportedFeature);
+                    }
+                }
+                break;
+            }
         }
         self.deindent();
         write_line!(self, "}}");
@@ -134,6 +197,95 @@ impl<W: Write> CodeGenerator<W> {
 
     pub fn generate_register(&mut self, r: &Register, p: &Peripheral) -> Result<(), CodegenError> {
         let address = p.base_address.0 + r.address_offset.0;
+        let ty = try!(self.generate_fields(r));
+
+        if r.is_read() {
+            write_line!(self, "pub unsafe fn read_{}() -> {} {{", r.name, ty);
+            write_line!(self, "    let ptr = 0x{:x} as *const {};", address, ty);
+            write_line!(self, "    core::ptr::read_volatile(ptr)");
+            write_line!(self, "}}");
+        }
+
+        if r.is_write() {
+            write_line!(self,
+                        "pub unsafe fn write_{}<T: Into<{}>>(value: T) {{",
+                        r.name,
+                        ty);
+            write_line!(self, "    let ptr = 0x{:x} as *mut {};", address, ty);
+            write_line!(self, "    core::ptr::write_volatile(ptr, value.into())");
+            write_line!(self, "}}");
+        }
+
+        let ptr_constness = if r.is_write() {
+            "mut"
+        } else {
+            "const"
+        };
+
+        write_line!(self,
+                    "pub fn {}_ptr() -> *{} {} {{",
+                    r.name,
+                    ptr_constness,
+                    ty);
+        write_line!(self, "    0x{:x} as *{} {}", address, ptr_constness, ty);
+        write_line!(self, "}}");
+
+        Ok(())
+    }
+
+    pub fn generate_register_for_group(&mut self,
+                                       r: &Register,
+                                       pg: &PeripheralsGroup)
+                                       -> Result<(), CodegenError> {
+        let ty = try!(self.generate_fields(r));
+        write_line!(self, "impl {} {{", pg.struct_name());
+        self.indent();
+        if r.is_read() {
+            write_line!(self, "pub unsafe fn read_{}(&self) -> {} {{", r.name, ty);
+            write_line!(self,
+                        "    let ptr = (self.base_address + {}) as * const {};",
+                        r.address_offset.0,
+                        ty);
+            write_line!(self, "    core::ptr::read_volatile(ptr)");
+            write_line!(self, "}}");
+        }
+
+        if r.is_write() {
+            write_line!(self,
+                        "pub unsafe fn write_{}<T: Into<{}>>(&self, value: T) {{",
+                        r.name,
+                        ty);
+            write_line!(self,
+                        "    let ptr = (self.base_address + {}) as * mut {};",
+                        r.address_offset.0,
+                        ty);
+            write_line!(self, "    core::ptr::write_volatile(ptr, value.into())");
+            write_line!(self, "}}");
+        }
+
+        let ptr_constness = if r.is_write() {
+            "mut"
+        } else {
+            "const"
+        };
+
+        write_line!(self,
+                    "pub fn {}_ptr(&self) -> *{} {} {{",
+                    r.name,
+                    ptr_constness,
+                    ty);
+        write_line!(self,
+                    "    (self.base_address + 0x{:x}) as *{} {}",
+                    r.address_offset.0,
+                    ptr_constness,
+                    ty);
+        write_line!(self, "}}");
+        self.deindent();
+        write_line!(self, "}}");
+        Ok(())
+    }
+
+    pub fn generate_fields<'a>(&mut self, r: &'a Register) -> Result<&'a str, CodegenError> {
         let mut ty = try!(size_to_rust_type(r.size()));
         let has_field = match r.fields {
             Some(ref fields) => {
@@ -174,38 +326,7 @@ impl<W: Write> CodeGenerator<W> {
             ty = &*r.name;
         }
 
-        if r.is_read() {
-            write_line!(self, "pub unsafe fn read_{}() -> {} {{", r.name, ty);
-            write_line!(self, "    let ptr = 0x{:x} as *const {};", address, ty);
-            write_line!(self, "    core::ptr::read_volatile(ptr)");
-            write_line!(self, "}}");
-        }
-
-        if r.is_write() {
-            write_line!(self,
-                        "pub unsafe fn write_{}<T: Into<{}>>(value: T) {{",
-                        r.name,
-                        ty);
-            write_line!(self, "    let ptr = 0x{:x} as *mut {};", address, ty);
-            write_line!(self, "    core::ptr::write_volatile(ptr, value.into())");
-            write_line!(self, "}}");
-        }
-
-        let ptr_constness = if r.is_write() {
-            "mut"
-        } else {
-            "const"
-        };
-
-        write_line!(self,
-                    "pub fn {}_ptr() -> *{} {} {{",
-                    r.name,
-                    ptr_constness,
-                    ty);
-        write_line!(self, "    0x{:x} as *{} {}", address, ptr_constness, ty);
-        write_line!(self, "}}");
-
-        Ok(())
+        Ok(ty)
     }
 
     pub fn generate_bits_get(&mut self, lsb: &str, field_width: u32) -> Result<(), CodegenError> {
