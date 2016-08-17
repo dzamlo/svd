@@ -63,27 +63,28 @@ unsafe {
 Setting pin 7 of GPIOB as an output:
 ```rust
 unsafe {
-    let mut moder = STM32F7x7::GPIOB::read_MODER();
+    let gpio = STM32F7x7::GPIO::GPIOB;
+    let mut moder = gpio.read_MODER();
     moder.set_MODER(7, 0b01);
-    STM32F7x7::GPIOB::write_MODER(moder);
+    gpio.write_MODER(moder);
 }
 ```
 
 Setting pin 7 of GPIOB as high:
 ```rust
-let mut bsrr = STM32F7x7::GPIOB::BSRR(0);
+let mut bsrr = STM32F7x7::GPIO::BSRR(0);
 bsrr.set_BS(7, true);
 unsafe {
-    STM32F7x7::GPIOB::write_BSRR(bsrr);
+    STM32F7x7::GPIO::GPIOB.write_BSRR(bsrr);
 }
 ```
 
 Setting pin 7 of GPIOB as low:
 ```rust
-let mut bsrr = STM32F7x7::GPIOB::BSRR(0);
+let mut bsrr = STM32F7x7::GPIO::BSRR(0);
 bsrr.set_BR(7, true);
 unsafe {
-    STM32F7x7::GPIOB::write_BSRR(bsrr);
+    STM32F7x7::GPIO::GPIOB.write_BSRR(bsrr);
 }
 ```
 
