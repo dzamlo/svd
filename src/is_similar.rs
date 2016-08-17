@@ -1,3 +1,4 @@
+#[derive(Default)]
 pub struct IsSimilarOptions {
     ignore_fields: bool,
 }
