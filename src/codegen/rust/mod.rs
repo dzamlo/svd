@@ -176,9 +176,7 @@ impl<W: Write> CodeGenerator<W> {
         Ok(())
     }
 
-    pub fn generate_peripheral(&mut self,
-                               p: &Peripheral)
-                               -> Result<(), CodegenError> {
+    pub fn generate_peripheral(&mut self, p: &Peripheral) -> Result<(), CodegenError> {
         try!(self.generate_doc(&p.description));
         write_line!(self, "pub mod {} {{", p.name);
         self.indent();
