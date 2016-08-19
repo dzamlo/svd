@@ -35,14 +35,14 @@ const SVD_FILENAME: &'static str = "STM32F7x7.svd";
 const OUT_FILENAME: &'static str = "STM32F7x7.rs";
 
 fn main() {
-   let f_in = File::open(SVD_FILENAME).unwrap();
-   let out_dir = env::var("OUT_DIR").unwrap();
-   let dest_path = Path::new(&out_dir).join(OUT_FILENAME);
-   let mut f_out = File::create(&dest_path).unwrap();
+    let f_in = File::open(SVD_FILENAME).unwrap();
+    let out_dir = env::var("OUT_DIR").unwrap();
+    let dest_path = Path::new(&out_dir).join(OUT_FILENAME);
+    let mut f_out = File::create(&dest_path).unwrap();
 
-   let d = svd::device::Device::from_reader(f_in).unwrap();
-   let mut code_generator = rust::CodeGenerator::new(&mut f_out);
-   code_generator.generate_device(&d).unwrap();
+    let d = svd::device::Device::from_reader(f_in).unwrap();
+    let mut code_generator = rust::CodeGenerator::new(&mut f_out);
+    code_generator.generate_device(&d).unwrap();
 }
 ```
 
