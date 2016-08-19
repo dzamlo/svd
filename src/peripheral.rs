@@ -104,14 +104,56 @@ impl Peripheral {
             }
         }
     }
+
+    pub fn merge_derived_from(&mut self, derived_from: &Peripheral) {
+        self.derived_from = derived_from.derived_from.clone();
+        self.dim_element.merge_derived_from(&derived_from.dim_element);
+        merge_option_field!(self.version, derived_from.version);
+        merge_option_field!(self.description, derived_from.description);
+        merge_option_field!(self.alternate_peripheral, derived_from.alternate_peripheral);
+        merge_option_field!(self.group_name, derived_from.group_name);
+        merge_option_field!(self.prepend_to_name, derived_from.prepend_to_name);
+        merge_option_field!(self.append_to_name, derived_from.append_to_name);
+        merge_option_field!(self.header_struct_name, derived_from.header_struct_name);
+        merge_option_field!(self.disable_condition, derived_from.disable_condition);
+        self.register_properties = self.register_properties
+            .merge(&derived_from.register_properties);
+        if self.address_blocks.is_empty() {
+            self.address_blocks = derived_from.address_blocks.clone();
+        }
+        merge_option_field!(self.registers, derived_from.registers);
+
+
+    }
+
+    #[allow(unknown_lints)]
+    #[allow(needless_range_loop)]
+    pub fn propagate_derived_from(&mut self) {
+        if let Some(ref mut registers) = self.registers {
+            for i in 0..registers.len() {
+                while registers[i].derived_from().is_some() {
+                    let mut register_derived_from = None;
+                    if let Some(ref derived_from) = *registers[i].derived_from() {
+                        for register in &*registers {
+                            if register.name() == *derived_from {
+                                register_derived_from = Some(register.clone());
+                                break;
+                            }
+                        }
+                    }
+
+                    if let Some(register_derived_from) = register_derived_from {
+                        registers[i].merge_derived_from(&register_derived_from);
+                    }
+                }
+                registers[i].propagate_derived_from();
+            }
+        }
+    }
 }
 
 impl<'a, 'b> IsSimilar<&'a Peripheral> for &'b Peripheral {
     fn is_similar(self, other: &Peripheral, options: &IsSimilarOptions) -> bool {
-        if let Some(ref derived_from) = other.derived_from {
-            return self.name == *derived_from || self.derived_from == other.derived_from;
-        }
-
         self.registers.is_similar(&other.registers, options)
     }
 }

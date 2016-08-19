@@ -35,4 +35,10 @@ impl DimElementGroup {
             dim_index: dim_index,
         })
     }
+
+    pub fn merge_derived_from(&mut self, derived_from: &DimElementGroup) {
+        merge_option_field!(self.dim, derived_from.dim);
+        merge_option_field!(self.dim_increment, derived_from.dim_increment);
+        merge_option_field!(self.dim_index, derived_from.dim_index);
+    }
 }

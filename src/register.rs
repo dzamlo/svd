@@ -103,6 +103,46 @@ impl Register {
     pub fn size(&self) -> u64 {
         self.register_properties.size.map_or(32, |s| s.0)
     }
+
+    pub fn merge_derived_from(&mut self, derived_from: &Register) {
+        self.derived_from = derived_from.derived_from.clone();
+        self.dim_element.merge_derived_from(&derived_from.dim_element);
+        merge_option_field!(self.display_name, derived_from.display_name);
+        merge_option_field!(self.description, derived_from.description);
+        merge_option_field!(self.alternate_group, derived_from.alternate_group);
+        merge_option_field!(self.alternate_register, derived_from.alternate_register);
+        self.register_properties = self.register_properties
+            .merge(&derived_from.register_properties);
+        merge_option_field!(self.data_type, derived_from.data_type);
+        merge_option_field!(self.modified_write_values,
+                            derived_from.modified_write_values);
+        merge_option_field!(self.read_action, derived_from.read_action);
+        merge_option_field!(self.fields, derived_from.fields);
+    }
+
+    #[allow(unknown_lints)]
+    #[allow(needless_range_loop)]
+    pub fn propagate_derived_from(&mut self) {
+        if let Some(ref mut fields) = self.fields {
+            for i in 0..fields.len() {
+                while fields[i].derived_from.is_some() {
+                    let mut field_derived_from = None;
+                    if let Some(ref derived_from) = fields[i].derived_from {
+                        for field in &*fields {
+                            if field.name == *derived_from {
+                                field_derived_from = Some(field.clone());
+                                break;
+                            }
+                        }
+                    }
+
+                    if let Some(field_derived_from) = field_derived_from {
+                        fields[i].merge_derived_from(&field_derived_from);
+                    }
+                }
+            }
+        }
+    }
 }
 
 impl<'a, 'b> IsSimilar<&'a Register> for &'b Register {

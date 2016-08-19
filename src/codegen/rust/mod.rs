@@ -1,4 +1,4 @@
-use device::{Device, PeripheralsMap};
+use device::Device;
 use codegen::error::CodegenError;
 use field::{Field, FieldsGroup};
 use is_similar::IsSimilarOptions;
@@ -114,7 +114,6 @@ impl<W: Write> CodeGenerator<W> {
         try!(self.generate_doc(&Some(&d.description)));
         write_line!(self, "pub mod {} {{", d.name);
         self.indent();
-        let peripherals_map = d.peripherals_map();
 
         if self.group_peripherals {
             let mut options = IsSimilarOptions::new();
@@ -127,12 +126,12 @@ impl<W: Write> CodeGenerator<W> {
             }
 
             for p in &individuals {
-                try!(self.generate_peripheral(p, &peripherals_map));
+                try!(self.generate_peripheral(p));
             }
 
         } else {
             for p in &d.peripherals {
-                try!(self.generate_peripheral(p, &peripherals_map));
+                try!(self.generate_peripheral(p));
             }
         }
 
@@ -178,38 +177,29 @@ impl<W: Write> CodeGenerator<W> {
     }
 
     pub fn generate_peripheral(&mut self,
-                               p: &Peripheral,
-                               peripherals_map: &PeripheralsMap)
+                               p: &Peripheral)
                                -> Result<(), CodegenError> {
         try!(self.generate_doc(&p.description));
         write_line!(self, "pub mod {} {{", p.name);
         self.indent();
         write_line!(self, "use core;");
-        try!(self.generate_peripheral_registers(p, p, peripherals_map));
+        try!(self.generate_peripheral_registers(p));
         self.deindent();
         write_line!(self, "}}");
         Ok(())
     }
 
     pub fn generate_peripheral_registers(&mut self,
-                                         main_peripheral: &Peripheral,
-                                         derived_from: &Peripheral,
-                                         peripherals_map: &PeripheralsMap)
+                                         peripheral: &Peripheral)
                                          -> Result<(), CodegenError> {
-        if let Some(ref registers) = derived_from.registers {
+        if let Some(ref registers) = peripheral.registers {
             for r in registers {
                 if let RegisterOrCluster::Register(ref r) = *r {
-                    try!(self.generate_register(r, main_peripheral));
+                    try!(self.generate_register(r, peripheral));
                 } else {
                     return Err(CodegenError::UnsupportedFeature);
                 }
             }
-        }
-
-        if let Some(ref derived_from_name) = derived_from.derived_from {
-            try!(self.generate_peripheral_registers(main_peripheral,
-                                                    peripherals_map[&**derived_from_name],
-                                                    peripherals_map));
         }
 
         Ok(())

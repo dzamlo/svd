@@ -33,6 +33,7 @@ impl Device {
     pub fn from_reader<R: Read>(r: R) -> Result<Device, ParseError> {
         let element = try!(xmltree::Element::parse(r));
         let mut d = try!(Device::from_element(&element));
+        d.propagate_derived_from();
         d.propagate_register_properties();
         Ok(d)
     }
@@ -100,6 +101,28 @@ impl Device {
     pub fn propagate_register_properties(&mut self) {
         for peripheral in &mut self.peripherals {
             peripheral.propagate_register_properties(&self.register_properties);
+        }
+    }
+
+    pub fn propagate_derived_from(&mut self) {
+        for i in 0..self.peripherals.len() {
+            while self.peripherals[i].derived_from.is_some() {
+                let mut peripheral_derived_from = None;
+                if let Some(ref derived_from) = self.peripherals[i].derived_from {
+                    for peripheral in &self.peripherals {
+                        if peripheral.name == *derived_from {
+                            peripheral_derived_from = Some(peripheral.clone());
+                            break;
+                        }
+                    }
+                }
+
+                if let Some(peripheral_derived_from) = peripheral_derived_from {
+                    self.peripherals[i].merge_derived_from(&peripheral_derived_from);
+                }
+            }
+            self.peripherals[i].propagate_derived_from();
+
         }
     }
 

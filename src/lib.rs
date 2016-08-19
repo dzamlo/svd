@@ -2,6 +2,7 @@ extern crate xmltree;
 
 #[macro_use]
 mod str_enum;
+#[macro_use]
 mod utils;
 
 pub mod access;

@@ -82,6 +82,18 @@ impl Field {
             None => true,
         }
     }
+
+    pub fn merge_derived_from(&mut self, derived_from: &Field) {
+        self.derived_from = derived_from.derived_from.clone();
+        merge_option_field!(self.description, derived_from.description);
+        merge_option_field!(self.access, derived_from.access);
+        merge_option_field!(self.modified_write_values,
+                            derived_from.modified_write_values);
+        merge_option_field!(self.read_action, derived_from.read_action);
+        if self.enumerated_values.is_empty() {
+            self.enumerated_values = derived_from.enumerated_values.clone();
+        }
+    }
 }
 
 impl<'a, 'b> IsSimilar<&'a Field> for &'b Field {

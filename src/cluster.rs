@@ -61,6 +61,40 @@ impl Cluster {
             r_or_c.propagate_register_properties(&self.register_properties);
         }
     }
+
+    pub fn merge_derived_from(&mut self, derived_from: &Cluster) {
+        self.derived_from = derived_from.derived_from.clone();
+        self.dim_element.merge_derived_from(&derived_from.dim_element);
+        merge_option_field!(self.alternate_cluster, derived_from.alternate_cluster);
+        merge_option_field!(self.header_struct_name, derived_from.header_struct_name);
+        self.register_properties = self.register_properties
+            .merge(&derived_from.register_properties);
+        if self.registers.is_empty() {
+            self.registers = derived_from.registers.clone();
+        }
+    }
+
+    pub fn propagate_derived_from(&mut self) {
+        for i in 0..self.registers.len() {
+            while self.registers[i].derived_from().is_some() {
+                let mut register_derived_from = None;
+                if let Some(ref derived_from) = *self.registers[i].derived_from() {
+                    for register in &*self.registers {
+                        if register.name() == *derived_from {
+                            register_derived_from = Some(register.clone());
+                            break;
+                        }
+                    }
+                }
+
+                if let Some(register_derived_from) = register_derived_from {
+                    self.registers[i].merge_derived_from(&register_derived_from);
+                }
+            }
+            self.registers[i].propagate_derived_from();
+        }
+
+    }
 }
 
 impl<'a, 'b> IsSimilar<&'a Cluster> for &'b Cluster {

@@ -3,6 +3,7 @@ use error::FromElementError;
 use is_similar::{IsSimilar, IsSimilarOptions};
 use register::Register;
 use register_properties_group::RegisterPropertiesGroup;
+use types::*;
 use xmltree;
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
@@ -20,6 +21,20 @@ impl RegisterOrCluster {
         }
     }
 
+    pub fn derived_from(&self) -> &Option<IdentifierType> {
+        match *self {
+            RegisterOrCluster::Register(ref r) => &r.derived_from,
+            RegisterOrCluster::Cluster(ref c) => &c.derived_from,
+        }
+    }
+
+    pub fn name(&self) -> &str {
+        match *self {
+            RegisterOrCluster::Register(ref r) => &*r.name,
+            RegisterOrCluster::Cluster(ref c) => &*c.name,
+        }
+    }
+
     pub fn propagate_register_properties(&mut self,
                                          register_properties: &RegisterPropertiesGroup) {
         match *self {
@@ -28,6 +43,28 @@ impl RegisterOrCluster {
             }
             RegisterOrCluster::Cluster(ref mut c) => {
                 c.propagate_register_properties(register_properties)
+            }
+        }
+    }
+
+    pub fn merge_derived_from(&mut self, derived_from: &RegisterOrCluster) {
+        match (self, derived_from) {
+            (&mut RegisterOrCluster::Register(ref mut r1),
+             &RegisterOrCluster::Register(ref r2)) => r1.merge_derived_from(r2),
+            (&mut RegisterOrCluster::Cluster(ref mut c1), &RegisterOrCluster::Cluster(ref c2)) => {
+                c1.merge_derived_from(c2)
+            }
+            _ => (),
+        }
+    }
+
+    pub fn propagate_derived_from(&mut self) {
+        match *self {
+            RegisterOrCluster::Register(ref mut r) => {
+                r.propagate_derived_from();
+            }
+            RegisterOrCluster::Cluster(ref mut c) => {
+                c.propagate_derived_from();
             }
         }
     }
