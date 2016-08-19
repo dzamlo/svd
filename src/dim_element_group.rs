@@ -1,9 +1,8 @@
 use error::FromElementError;
+use std::str::FromStr;
 use types::*;
 use utils::get_child_text;
 use xmltree;
-
-pub type DimIndexType = String;
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct DimElementGroup {
@@ -40,5 +39,70 @@ impl DimElementGroup {
         merge_option_field!(self.dim, derived_from.dim);
         merge_option_field!(self.dim_increment, derived_from.dim_increment);
         merge_option_field!(self.dim_index, derived_from.dim_index);
+    }
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
+pub enum DimIndexType {
+    // [_0-9a-zA-Z]+(,\s*[_0-9a-zA-Z]+)+
+    List(Vec<String>),
+    // [A-Z]-[A-Z]
+    CharRange {
+        start: char,
+        end: char,
+    },
+    // [0-9]+\-[0-9]+|
+    DecimalRange {
+        start: u64,
+        end: u64,
+    },
+}
+
+fn is_dim_index_char_valid(c: char) -> bool {
+    match c {
+        '_' | '0'...'9' | 'a'...'z' | 'A'...'Z' => true,
+        _ => false,
+    }
+}
+
+fn is_dim_index_str_valid(s: &str) -> bool {
+    s.chars().all(is_dim_index_char_valid)
+}
+
+impl FromStr for DimIndexType {
+    type Err = FromElementError;
+
+    fn from_str(s: &str) -> Result<DimIndexType, FromElementError> {
+        if s.contains('-') {
+            let mut splitted = s.split('-');
+            let left = splitted.next().unwrap();
+            let right = splitted.next().unwrap();
+            if left.len() == 1 && right.len() == 1 {
+                let left_char = left.chars().next().unwrap();
+                let right_char = right.chars().next().unwrap();
+                if let ('A'...'Z', 'A'...'Z') = (left_char, right_char) {
+                    return Ok(DimIndexType::CharRange {
+                        start: left_char,
+                        end: right_char,
+                    });
+                }
+            }
+
+            if let (Ok(start), Ok(end)) = (left.parse(), right.parse()) {
+                Ok(DimIndexType::DecimalRange {
+                    start: start,
+                    end: end,
+                })
+            } else {
+                Err(FromElementError::InvalidFormat)
+            }
+        } else {
+            let list: Vec<_> = s.split(',').map(|s| s.trim().to_string()).collect();
+            if !list.is_empty() && list.iter().all(|s| is_dim_index_str_valid(&*s)) {
+                Ok(DimIndexType::List(list))
+            } else {
+                Err(FromElementError::InvalidFormat)
+            }
+        }
     }
 }
