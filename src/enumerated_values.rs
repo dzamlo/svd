@@ -1,6 +1,6 @@
 use error::FromElementError;
-use types::*;
 use std::str::FromStr;
+use types::*;
 use utils::get_child_text;
 use xmltree;
 
@@ -16,19 +16,12 @@ str_enum!{EnumUsage,
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub enum EnumeratedValueData {
     IsDefault(bool),
-    Value {
-        value: u64,
-        do_not_care: u64,
-    },
+    Value { value: u64, do_not_care: u64 },
 }
 
 impl EnumeratedValueData {
     pub fn from_value_str(s: &str) -> Result<EnumeratedValueData, FromElementError> {
-        let s = if s.starts_with('x') {
-            &s[1..]
-        } else {
-            s
-        };
+        let s = if s.starts_with('x') { &s[1..] } else { s };
 
         if s.starts_with('#') && (s.contains('x') || s.contains('X')) {
             let mut do_not_care = 0;
@@ -57,7 +50,8 @@ impl EnumeratedValueData {
         }
     }
 
-    pub fn from_element(element: &xmltree::Element) -> Result<EnumeratedValueData, FromElementError> {
+    pub fn from_element(element: &xmltree::Element)
+                        -> Result<EnumeratedValueData, FromElementError> {
         if let Some(is_default) = get_child_text(element, "isDefault") {
             match &*is_default {
                 "true" => Ok(EnumeratedValueData::IsDefault(true)),

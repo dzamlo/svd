@@ -10,11 +10,7 @@ impl FromStr for ScaledNonNegativeInteger {
     type Err = FromElementError;
 
     fn from_str(s: &str) -> Result<ScaledNonNegativeInteger, FromElementError> {
-        let s = if s.starts_with('+') {
-            &s[1..]
-        } else {
-            s
-        };
+        let s = if s.starts_with('+') { &s[1..] } else { s };
 
         let parsed = if s.starts_with('#') {
             let s = &s[1..];
@@ -36,9 +32,9 @@ impl FromStr for ScaledNonNegativeInteger {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
     use error::FromElementError;
     use std::str::FromStr;
+    use super::*;
 
     #[test]
     fn decimal() {

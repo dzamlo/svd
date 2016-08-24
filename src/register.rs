@@ -1,5 +1,5 @@
-use dim_element_group::DimElementGroup;
 use data_type::DataType;
+use dim_element_group::DimElementGroup;
 use error::FromElementError;
 use field::Field;
 use is_similar::{IsSimilar, IsSimilarOptions};

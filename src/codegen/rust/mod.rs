@@ -1,13 +1,13 @@
-use device::Device;
 use codegen::error::CodegenError;
+use device::Device;
 use field::{Field, FieldsGroup};
 use is_similar::IsSimilarOptions;
-use std::fmt::Display;
-use std::io::Write;
 use peripheral::{Peripheral, PeripheralsGroup};
 use register::Register;
 use register_or_cluster::RegisterOrCluster;
+use std::fmt::Display;
 use std::io;
+use std::io::Write;
 
 
 macro_rules! write_line {
@@ -226,11 +226,7 @@ impl<W: Write> CodeGenerator<W> {
             write_line!(self, "}}");
         }
 
-        let ptr_constness = if r.is_write() {
-            "mut"
-        } else {
-            "const"
-        };
+        let ptr_constness = if r.is_write() { "mut" } else { "const" };
 
         try!(self.generate_doc(&r.description));
         write_line!(self,
@@ -276,11 +272,7 @@ impl<W: Write> CodeGenerator<W> {
             write_line!(self, "}}");
         }
 
-        let ptr_constness = if r.is_write() {
-            "mut"
-        } else {
-            "const"
-        };
+        let ptr_constness = if r.is_write() { "mut" } else { "const" };
         try!(self.generate_doc(&r.description));
         write_line!(self,
                     "pub fn {}_ptr(&self) -> *{} {} {{",

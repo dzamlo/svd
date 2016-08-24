@@ -47,15 +47,9 @@ pub enum DimIndexType {
     // [_0-9a-zA-Z]+(,\s*[_0-9a-zA-Z]+)+
     List(Vec<String>),
     // [A-Z]-[A-Z]
-    CharRange {
-        start: char,
-        end: char,
-    },
+    CharRange { start: char, end: char },
     // [0-9]+\-[0-9]+|
-    DecimalRange {
-        start: u64,
-        end: u64,
-    },
+    DecimalRange { start: u64, end: u64 },
 }
 
 fn is_dim_index_char_valid(c: char) -> bool {
