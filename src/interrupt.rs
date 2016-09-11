@@ -1,4 +1,4 @@
-use error::FromElementError;
+use errors::*;
 use utils::get_child_text;
 use xmltree;
 
@@ -10,21 +10,17 @@ pub struct Interrupt {
 }
 
 impl Interrupt {
-    pub fn from_element(element: &xmltree::Element) -> Result<Interrupt, FromElementError> {
-        let name = get_child_text(element, "name");
+    pub fn from_element(element: &xmltree::Element) -> Result<Interrupt> {
+        let name = get_mandatory_child_text!(element, "interrupt", "name");
         let description = get_child_text(element, "description");
-        let value = get_child_text(element, "value");
+        let value = get_mandatory_child_text!(element, "interrupt", "value");
 
-        if name.is_none() || value.is_none() {
-            Err(FromElementError::MissingField)
-        } else {
-            let name = name.unwrap();
-            let value = try!(value.unwrap().parse());
-            Ok(Interrupt {
-                name: name,
-                description: description,
-                value: value,
-            })
-        }
+        let value = try!(value.parse());
+        Ok(Interrupt {
+            name: name,
+            description: description,
+            value: value,
+        })
+
     }
 }

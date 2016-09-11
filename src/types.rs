@@ -1,4 +1,4 @@
-use error::FromElementError;
+use errors::*;
 use std::str::FromStr;
 
 pub type IdentifierType = String;
@@ -7,9 +7,9 @@ pub type IdentifierType = String;
 pub struct ScaledNonNegativeInteger(pub u64);
 
 impl FromStr for ScaledNonNegativeInteger {
-    type Err = FromElementError;
+    type Err = Error;
 
-    fn from_str(s: &str) -> Result<ScaledNonNegativeInteger, FromElementError> {
+    fn from_str(s: &str) -> Result<ScaledNonNegativeInteger> {
         let s = if s.starts_with('+') { &s[1..] } else { s };
 
         let parsed = if s.starts_with('#') {
@@ -32,39 +32,34 @@ impl FromStr for ScaledNonNegativeInteger {
 
 #[cfg(test)]
 mod tests {
-    use error::FromElementError;
     use std::str::FromStr;
     use super::*;
 
     #[test]
     fn decimal() {
-        assert_eq!(Ok(ScaledNonNegativeInteger(10)),
-                   ScaledNonNegativeInteger::from_str("10"));
+        assert_eq!(Some(ScaledNonNegativeInteger(10)),
+                   ScaledNonNegativeInteger::from_str("10").ok());
     }
 
     #[test]
     fn hex() {
-        assert_eq!(Ok(ScaledNonNegativeInteger(31)),
-                   ScaledNonNegativeInteger::from_str("0x1F"));
-        assert_eq!(Ok(ScaledNonNegativeInteger(31)),
-                   ScaledNonNegativeInteger::from_str("0X1f"));
+        assert_eq!(Some(ScaledNonNegativeInteger(31)),
+                   ScaledNonNegativeInteger::from_str("0x1F").ok());
+        assert_eq!(Some(ScaledNonNegativeInteger(31)),
+                   ScaledNonNegativeInteger::from_str("0X1f").ok());
     }
 
     #[test]
     fn binary() {
-        assert_eq!(Ok(ScaledNonNegativeInteger(2)),
-                   ScaledNonNegativeInteger::from_str("#10"));
+        assert_eq!(Some(ScaledNonNegativeInteger(2)),
+                   ScaledNonNegativeInteger::from_str("#10").ok());
     }
 
     #[test]
     fn invalid() {
-        assert_eq!(Err(FromElementError::InvalidFormat),
-                   ScaledNonNegativeInteger::from_str(""));
-        assert_eq!(Err(FromElementError::InvalidFormat),
-                   ScaledNonNegativeInteger::from_str("a"));
-        assert_eq!(Err(FromElementError::InvalidFormat),
-                   ScaledNonNegativeInteger::from_str("0xg"));
-        assert_eq!(Err(FromElementError::InvalidFormat),
-                   ScaledNonNegativeInteger::from_str("#2"));
+        assert!(ScaledNonNegativeInteger::from_str("").is_err());
+        assert!(ScaledNonNegativeInteger::from_str("a").is_err());
+        assert!(ScaledNonNegativeInteger::from_str("0xg").is_err());
+        assert!(ScaledNonNegativeInteger::from_str("#2").is_err());
     }
 }

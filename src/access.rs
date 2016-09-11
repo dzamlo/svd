@@ -1,4 +1,4 @@
-use error::FromElementError;
+use errors::*;
 use std::str::FromStr;
 
 str_enum!{Access,

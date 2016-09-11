@@ -1,6 +1,6 @@
 use address_block::AddresBlock;
 use dim_element_group::DimElementGroup;
-use error::FromElementError;
+use errors::*;
 use interrupt::Interrupt;
 use is_similar::{IsSimilar, IsSimilarOptions};
 use register_or_cluster::RegisterOrCluster;
@@ -31,10 +31,10 @@ pub struct Peripheral {
 }
 
 impl Peripheral {
-    pub fn from_element(element: &xmltree::Element) -> Result<Peripheral, FromElementError> {
+    pub fn from_element(element: &xmltree::Element) -> Result<Peripheral> {
         let derived_from = element.attributes.get("derivedFrom").cloned();
         let dim_element = try!(DimElementGroup::from_element(element));
-        let name = get_child_text(element, "name");
+        let name = get_mandatory_child_text!(element, "perpheral", "name");
         let version = get_child_text(element, "version");
         let description = get_child_text(element, "description");
         let alternate_peripheral = get_child_text(element, "alternatePeripheral");
@@ -43,15 +43,15 @@ impl Peripheral {
         let append_to_name = get_child_text(element, "appendToName");
         let header_struct_name = get_child_text(element, "headerStructName");
         let disable_condition = get_child_text(element, "disableCondition");
-        let base_address = get_child_text(element, "baseAddress");
+        let base_address = get_mandatory_child_text!(element, "perpheral", "baseAddress");
         let register_properties = try!(RegisterPropertiesGroup::from_element(element));
-        let address_blocks: Result<Vec<_>, FromElementError> = element.children
+        let address_blocks: Result<Vec<_>> = element.children
             .iter()
             .filter(|e| e.name == "addressBlock")
             .map(AddresBlock::from_element)
             .collect();
         let address_blocks = try!(address_blocks);
-        let interrupts: Result<Vec<_>, FromElementError> = element.children
+        let interrupts: Result<Vec<_>> = element.children
             .iter()
             .filter(|e| e.name == "interrupt")
             .map(Interrupt::from_element)
@@ -59,7 +59,7 @@ impl Peripheral {
         let interrupts = try!(interrupts);
         let registers = match element.get_child("registers") {
             Some(registers) => {
-                let registers: Result<Vec<_>, FromElementError> =
+                let registers: Result<Vec<_>> =
                     registers.children.iter().map(RegisterOrCluster::from_element).collect();
                 let registers = try!(registers);
                 Some(registers)
@@ -67,32 +67,26 @@ impl Peripheral {
             None => None,
         };
 
+        let base_address = try!(base_address.parse());
 
-        if name.is_none() || base_address.is_none() {
-            Err(FromElementError::MissingField)
-        } else {
-            let name = name.unwrap();
-            let base_address = try!(base_address.unwrap().parse());
-
-            Ok(Peripheral {
-                derived_from: derived_from,
-                dim_element: dim_element,
-                name: name,
-                version: version,
-                description: description,
-                alternate_peripheral: alternate_peripheral,
-                group_name: group_name,
-                prepend_to_name: prepend_to_name,
-                append_to_name: append_to_name,
-                header_struct_name: header_struct_name,
-                disable_condition: disable_condition,
-                base_address: base_address,
-                register_properties: register_properties,
-                address_blocks: address_blocks,
-                interrupts: interrupts,
-                registers: registers,
-            })
-        }
+        Ok(Peripheral {
+            derived_from: derived_from,
+            dim_element: dim_element,
+            name: name,
+            version: version,
+            description: description,
+            alternate_peripheral: alternate_peripheral,
+            group_name: group_name,
+            prepend_to_name: prepend_to_name,
+            append_to_name: append_to_name,
+            header_struct_name: header_struct_name,
+            disable_condition: disable_condition,
+            base_address: base_address,
+            register_properties: register_properties,
+            address_blocks: address_blocks,
+            interrupts: interrupts,
+            registers: registers,
+        })
     }
 
     pub fn propagate_register_properties(&mut self,

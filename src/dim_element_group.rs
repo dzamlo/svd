@@ -1,4 +1,4 @@
-use error::FromElementError;
+use errors::*;
 use std::str::FromStr;
 use types::*;
 use utils::get_child_text;
@@ -12,7 +12,7 @@ pub struct DimElementGroup {
 }
 
 impl DimElementGroup {
-    pub fn from_element(element: &xmltree::Element) -> Result<DimElementGroup, FromElementError> {
+    pub fn from_element(element: &xmltree::Element) -> Result<DimElementGroup> {
         let dim = match get_child_text(element, "dim") {
             Some(s) => Some(try!(s.parse())),
             None => None,
@@ -64,9 +64,9 @@ fn is_dim_index_str_valid(s: &str) -> bool {
 }
 
 impl FromStr for DimIndexType {
-    type Err = FromElementError;
+    type Err = Error;
 
-    fn from_str(s: &str) -> Result<DimIndexType, FromElementError> {
+    fn from_str(s: &str) -> Result<DimIndexType> {
         if s.contains('-') {
             let mut splitted = s.split('-');
             let left = splitted.next().unwrap();
@@ -88,14 +88,14 @@ impl FromStr for DimIndexType {
                     end: end,
                 })
             } else {
-                Err(FromElementError::InvalidFormat)
+                Err(ErrorKind::UnexpectedValue("a value valid for dimIndex", s.to_string()).into())
             }
         } else {
             let list: Vec<_> = s.split(',').map(|s| s.trim().to_string()).collect();
             if !list.is_empty() && list.iter().all(|s| is_dim_index_str_valid(&*s)) {
                 Ok(DimIndexType::List(list))
             } else {
-                Err(FromElementError::InvalidFormat)
+                Err(ErrorKind::UnexpectedValue("a value valid for dimIndex", s.to_string()).into())
             }
         }
     }

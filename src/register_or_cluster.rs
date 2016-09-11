@@ -1,5 +1,5 @@
 use cluster::Cluster;
-use error::FromElementError;
+use errors::*;
 use is_similar::{IsSimilar, IsSimilarOptions};
 use register::Register;
 use register_properties_group::RegisterPropertiesGroup;
@@ -13,11 +13,15 @@ pub enum RegisterOrCluster {
 }
 
 impl RegisterOrCluster {
-    pub fn from_element(element: &xmltree::Element) -> Result<RegisterOrCluster, FromElementError> {
+    pub fn from_element(element: &xmltree::Element) -> Result<RegisterOrCluster> {
         match &*element.name {
             "register" => Ok(RegisterOrCluster::Register(try!(Register::from_element(element)))),
             "cluster" => Ok(RegisterOrCluster::Cluster(try!(Cluster::from_element(element)))),
-            _ => Err(FromElementError::InvalidFormat),
+            _ => {
+                Err(ErrorKind::UnexpectedValue("one of register or cluster",
+                                               element.name.to_string())
+                    .into())
+            }
         }
     }
 

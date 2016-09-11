@@ -1,3 +1,12 @@
+macro_rules! join_expected_strs {
+    ($s1:expr, $s2:expr, ) => {
+        concat!($s1, " or ", $s2)
+    };
+    ($s:expr, $( $str:expr, )*) => {
+        concat!($s, ", ", join_expected_strs!($($str,)*))
+    };
+}
+
 macro_rules! str_enum {
     ( $name:ident,  $( $str:expr => $variant:ident, )* ) => {
        str_enum!{$name, $( $str => $variant ),* }
@@ -9,12 +18,17 @@ macro_rules! str_enum {
         }
 
         impl FromStr for $name {
-            type Err = FromElementError;
+            type Err = Error;
 
-            fn from_str(s: &str) -> Result<$name, FromElementError> {
+            fn from_str(s: &str) -> Result<$name> {
                 match s {
                     $($str => Ok($name::$variant), )*
-                    _ => Err(FromElementError::InvalidFormat),
+                    _ => Err(
+                        ErrorKind::UnexpectedValue(
+                            concat!("one of ", join_expected_strs!($($str,)*)),
+                            s.to_string()
+                        ).into()
+                    )
                 }
 
             }

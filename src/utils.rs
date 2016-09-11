@@ -20,6 +20,17 @@ macro_rules! merge_option_field {
     };
 }
 
+macro_rules! get_mandatory_child_text {
+    ( $xml_element:expr, $element_name:expr, $field_name:expr) => {
+        if let Some(value) = get_child_text($xml_element, $field_name) {
+            value
+        } else {
+            return Err(ErrorKind::MissingField($element_name, $field_name).into())
+        }
+    };
+}
+
+
 #[cfg(test)]
 mod tests {
     use super::extract_prefix;

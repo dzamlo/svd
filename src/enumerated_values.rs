@@ -1,4 +1,4 @@
-use error::FromElementError;
+use errors::*;
 use std::str::FromStr;
 use types::*;
 use utils::get_child_text;
@@ -20,7 +20,7 @@ pub enum EnumeratedValueData {
 }
 
 impl EnumeratedValueData {
-    pub fn from_value_str(s: &str) -> Result<EnumeratedValueData, FromElementError> {
+    pub fn from_value_str(s: &str) -> Result<EnumeratedValueData> {
         let s = if s.starts_with('x') { &s[1..] } else { s };
 
         if s.starts_with('#') && (s.contains('x') || s.contains('X')) {
@@ -34,7 +34,8 @@ impl EnumeratedValueData {
                 } else if c == '1' {
                     value |= 1;
                 } else if c != '0' {
-                    return Err(FromElementError::InvalidFormat);
+                    return Err(ErrorKind::UnexpectedValue("one of x, X, 0 or 1", c.to_string())
+                        .into());
                 }
             }
             Ok(EnumeratedValueData::Value {
@@ -50,18 +51,20 @@ impl EnumeratedValueData {
         }
     }
 
-    pub fn from_element(element: &xmltree::Element)
-                        -> Result<EnumeratedValueData, FromElementError> {
+    pub fn from_element(element: &xmltree::Element) -> Result<EnumeratedValueData> {
         if let Some(is_default) = get_child_text(element, "isDefault") {
             match &*is_default {
                 "true" => Ok(EnumeratedValueData::IsDefault(true)),
                 "false" => Ok(EnumeratedValueData::IsDefault(false)),
-                _ => Err(FromElementError::InvalidFormat),
+                _ => {
+                    Err(ErrorKind::UnexpectedValue("one of true or false", is_default.to_string())
+                        .into())
+                }
             }
         } else if let Some(value) = get_child_text(element, "value") {
             EnumeratedValueData::from_value_str(&value)
         } else {
-            Err(FromElementError::MissingField)
+            Err(ErrorKind::MissingField("enumeratedValue", "isDefault or value").into())
         }
     }
 }
@@ -74,20 +77,15 @@ pub struct EnumeratedValue {
 }
 
 impl EnumeratedValue {
-    pub fn from_element(element: &xmltree::Element) -> Result<EnumeratedValue, FromElementError> {
-        let name = get_child_text(element, "name");
+    pub fn from_element(element: &xmltree::Element) -> Result<EnumeratedValue> {
+        let name = get_mandatory_child_text!(element, "enumeratedValue", "name");
         let description = get_child_text(element, "description");
         let value = try!(EnumeratedValueData::from_element(element));
-        if name.is_none() {
-            Err(FromElementError::MissingField)
-        } else {
-            let name = name.unwrap();
-            Ok(EnumeratedValue {
-                name: name,
-                description: description,
-                value: value,
-            })
-        }
+        Ok(EnumeratedValue {
+            name: name,
+            description: description,
+            value: value,
+        })
     }
 }
 
@@ -101,7 +99,7 @@ pub struct EnumeratedValues {
 }
 
 impl EnumeratedValues {
-    pub fn from_element(element: &xmltree::Element) -> Result<EnumeratedValues, FromElementError> {
+    pub fn from_element(element: &xmltree::Element) -> Result<EnumeratedValues> {
         let derived_from = element.attributes.get("derivedFrom").cloned();
         let name = get_child_text(element, "name");
         let usage = match get_child_text(element, "usage") {
@@ -109,14 +107,14 @@ impl EnumeratedValues {
             None => None,
         };
 
-        let enumerated_values: Result<Vec<_>, FromElementError> = element.children
+        let enumerated_values: Result<Vec<_>> = element.children
             .iter()
             .filter(|e| e.name == "enumeratedValue")
             .map(EnumeratedValue::from_element)
             .collect();
         let enumerated_values = try!(enumerated_values);
         if enumerated_values.is_empty() {
-            Err(FromElementError::MissingField)
+            Err(ErrorKind::MissingField("enumeratedValues", "enumeratedValue").into())
         } else {
             Ok(EnumeratedValues {
                 derived_from: derived_from,

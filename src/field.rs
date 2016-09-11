@@ -1,7 +1,7 @@
 use access::Access;
 use bit_range::BitRange;
 use enumerated_values::EnumeratedValues;
-use error::FromElementError;
+use errors::*;
 use is_similar::{IsSimilar, IsSimilarOptions};
 use modified_write_values::ModifiedWriteValues;
 use read_action::ReadAction;
@@ -23,9 +23,9 @@ pub struct Field {
 }
 
 impl Field {
-    pub fn from_element(element: &xmltree::Element) -> Result<Field, FromElementError> {
+    pub fn from_element(element: &xmltree::Element) -> Result<Field> {
         let derived_from = element.attributes.get("derivedFrom").cloned();
-        let name = get_child_text(element, "name");
+        let name = get_mandatory_child_text!(element, "field", "name");
         let description = get_child_text(element, "description");
         let bit_range = try!(BitRange::from_element(element));
 
@@ -44,29 +44,23 @@ impl Field {
             None => None,
         };
 
-        let enumerated_values: Result<Vec<_>, FromElementError> = element.children
+        let enumerated_values: Result<Vec<_>> = element.children
             .iter()
             .filter(|e| e.name == "enumeratedValues")
             .map(EnumeratedValues::from_element)
             .collect();
         let enumerated_values = try!(enumerated_values);
 
-        if name.is_none() {
-            Err(FromElementError::MissingField)
-        } else {
-            let name = name.unwrap();
-            Ok(Field {
-                derived_from: derived_from,
-                name: name,
-                description: description,
-                bit_range: bit_range,
-                access: access,
-                modified_write_values: modified_write_values,
-                read_action: read_action,
-                enumerated_values: enumerated_values,
-            })
-        }
-
+        Ok(Field {
+            derived_from: derived_from,
+            name: name,
+            description: description,
+            bit_range: bit_range,
+            access: access,
+            modified_write_values: modified_write_values,
+            read_action: read_action,
+            enumerated_values: enumerated_values,
+        })
     }
 
     pub fn is_read(&self) -> bool {

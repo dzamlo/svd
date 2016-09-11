@@ -1,5 +1,5 @@
 use cpu::Cpu;
-use error::{FromElementError, ParseError};
+use errors::*;
 use interrupt::Interrupt;
 use peripheral::Peripheral;
 use register_properties_group::RegisterPropertiesGroup;
@@ -30,7 +30,7 @@ pub struct Device {
 }
 
 impl Device {
-    pub fn from_reader<R: Read>(r: R) -> Result<Device, ParseError> {
+    pub fn from_reader<R: Read>(r: R) -> Result<Device> {
         let element = try!(xmltree::Element::parse(r));
         let mut d = try!(Device::from_element(&element));
         d.propagate_derived_from();
@@ -38,18 +38,18 @@ impl Device {
         Ok(d)
     }
 
-    pub fn parse<R: Read>(r: R) -> Result<Device, ParseError> {
+    pub fn parse<R: Read>(r: R) -> Result<Device> {
         let element = try!(xmltree::Element::parse(r));
         Device::from_element(&element).map_err(|e| e.into())
     }
 
-    pub fn from_element(element: &xmltree::Element) -> Result<Device, FromElementError> {
+    pub fn from_element(element: &xmltree::Element) -> Result<Device> {
         let vendor = get_child_text(element, "vendor");
         let vendor_id = get_child_text(element, "vendor_id");
-        let name = get_child_text(element, "name");
+        let name = get_mandatory_child_text!(element, "device", "name");
         let series = get_child_text(element, "series");
-        let version = get_child_text(element, "version");
-        let description = get_child_text(element, "description");
+        let version = get_mandatory_child_text!(element, "device", "version");
+        let description = get_mandatory_child_text!(element, "device", "description");
         let license_text = get_child_text(element, "licenseText");
         let cpu = match element.get_child("cpu") {
             Some(element) => Some(try!(Cpu::from_element(element))),
@@ -57,41 +57,37 @@ impl Device {
         };
         let header_system_filename = get_child_text(element, "headerSystemFilename");
         let header_definition_prefix = get_child_text(element, "headerDefinitionsPrefix");
-        let address_unit_bits = get_child_text(element, "addressUnitBits");
-        let width = get_child_text(element, "width");
+        let address_unit_bits = get_mandatory_child_text!(element, "device", "addressUnitBits");
+        let width = get_mandatory_child_text!(element, "device", "width");
         let register_properties = try!(RegisterPropertiesGroup::from_element(element));
-        let peripherals = element.get_child("peripherals");
+        let peripherals = match element.get_child("peripherals") {
+            Some(peripherals) => peripherals,
+            None => return Err(ErrorKind::MissingField("device", "peripherals").into()),
+        };
 
-        if name.is_none() || version.is_none() || description.is_none() ||
-           address_unit_bits.is_none() || width.is_none() || peripherals.is_none() {
-            Err(FromElementError::MissingField)
-        } else {
-            let name = name.unwrap();
-            let version = version.unwrap();
-            let description = description.unwrap();
-            let address_unit_bits = try!(address_unit_bits.unwrap().parse());
-            let width = try!(width.unwrap().parse());
-            let peripherals: Result<Vec<_>, FromElementError> =
-                peripherals.unwrap().children.iter().map(Peripheral::from_element).collect();
-            let peripherals = try!(peripherals);
+        let address_unit_bits = try!(address_unit_bits.parse());
+        let width = try!(width.parse());
+        let peripherals: Result<Vec<_>> =
+            peripherals.children.iter().map(Peripheral::from_element).collect();
+        let peripherals = try!(peripherals);
 
-            Ok(Device {
-                vendor: vendor,
-                vendor_id: vendor_id,
-                name: name,
-                series: series,
-                version: version,
-                description: description,
-                license_text: license_text,
-                cpu: cpu,
-                header_system_filename: header_system_filename,
-                header_definition_prefix: header_definition_prefix,
-                address_unit_bits: address_unit_bits,
-                width: width,
-                register_properties: register_properties,
-                peripherals: peripherals,
-            })
-        }
+        Ok(Device {
+            vendor: vendor,
+            vendor_id: vendor_id,
+            name: name,
+            series: series,
+            version: version,
+            description: description,
+            license_text: license_text,
+            cpu: cpu,
+            header_system_filename: header_system_filename,
+            header_definition_prefix: header_definition_prefix,
+            address_unit_bits: address_unit_bits,
+            width: width,
+            register_properties: register_properties,
+            peripherals: peripherals,
+        })
+
     }
 
     pub fn peripherals_map(&self) -> PeripheralsMap {

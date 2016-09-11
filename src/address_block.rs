@@ -1,4 +1,4 @@
-use error::FromElementError;
+use errors::*;
 use protection::Protection;
 use std::str::FromStr;
 use types::*;
@@ -21,42 +21,44 @@ pub struct AddresBlock {
 }
 
 impl FromStr for Usage {
-    type Err = FromElementError;
+    type Err = Error;
 
-    fn from_str(s: &str) -> Result<Usage, FromElementError> {
+    fn from_str(s: &str) -> Result<Usage> {
         match s {
             "registers" => Ok(Usage::Registers),
             "buffer" => Ok(Usage::Buffer),
             "reserved" => Ok(Usage::Reserved),
-            _ => Err(FromElementError::InvalidFormat),
+            _ => {
+                Err(ErrorKind::UnexpectedValue("one of registers, buffer or reserved",
+                                               s.to_string())
+                    .into())
+            }
+
         }
 
     }
 }
 
 impl AddresBlock {
-    pub fn from_element(element: &xmltree::Element) -> Result<AddresBlock, FromElementError> {
-        let offset = get_child_text(element, "offset");
-        let size = get_child_text(element, "size");
-        let usage = get_child_text(element, "usage");
+    pub fn from_element(element: &xmltree::Element) -> Result<AddresBlock> {
+        let offset = get_mandatory_child_text!(element, "addressBlock", "offset");
+        let size = get_mandatory_child_text!(element, "addressBlock", "size");
+        let usage = get_mandatory_child_text!(element, "addressBlock", "usage");
         let protection = match get_child_text(element, "protection") {
             Some(s) => Some(try!(s.parse())),
             None => None,
         };
 
-        if offset.is_none() || size.is_none() || usage.is_none() {
-            Err(FromElementError::MissingField)
-        } else {
-            let offset = try!(offset.unwrap().parse());
-            let size = try!(size.unwrap().parse());
-            let usage = try!(usage.unwrap().parse());
+        let offset = try!(offset.parse());
+        let size = try!(size.parse());
+        let usage = try!(usage.parse());
 
-            Ok(AddresBlock {
-                offset: offset,
-                size: size,
-                usage: usage,
-                protection: protection,
-            })
-        }
+        Ok(AddresBlock {
+            offset: offset,
+            size: size,
+            usage: usage,
+            protection: protection,
+        })
+
     }
 }

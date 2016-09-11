@@ -1,3 +1,5 @@
+#[macro_use]
+extern crate error_chain;
 extern crate xmltree;
 
 #[macro_use]
@@ -14,7 +16,7 @@ pub mod data_type;
 pub mod device;
 pub mod dim_element_group;
 pub mod enumerated_values;
-pub mod error;
+pub mod errors;
 pub mod field;
 pub mod interrupt;
 pub mod modified_write_values;

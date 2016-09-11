@@ -1,4 +1,4 @@
-use error::FromElementError;
+use errors::*;
 use types::*;
 use utils::get_child_text;
 use xmltree;
@@ -10,7 +10,7 @@ pub struct BitRange {
 }
 
 impl BitRange {
-    pub fn from_element(element: &xmltree::Element) -> Result<BitRange, FromElementError> {
+    pub fn from_element(element: &xmltree::Element) -> Result<BitRange> {
         let offset = get_child_text(element, "bitOffset");
         let width = get_child_text(element, "bitWidth");
         let lsb = get_child_text(element, "lsb");
@@ -39,7 +39,9 @@ impl BitRange {
         } else if let Some(bit_range) = bit_range {
             let colon_pos = bit_range.find(':');
             if !bit_range.starts_with('[') || !bit_range.ends_with(']') || colon_pos.is_none() {
-                Err(FromElementError::InvalidFormat)
+                Err(ErrorKind::UnexpectedValue(" a value of the form \\[[0-9]+:[0-9]+\\]",
+                                               bit_range.to_string())
+                    .into())
             } else {
                 let colon_pos = colon_pos.unwrap();
                 let msb: u32 = try!(bit_range[1..colon_pos].parse());
@@ -50,7 +52,9 @@ impl BitRange {
                 })
             }
         } else {
-            Err(FromElementError::MissingField)
+            Err(ErrorKind::MissingField("field",
+                                        "bitOffset and bitWidth, lsb and msb, or bitRange")
+                .into())
         }
     }
 

@@ -1,5 +1,5 @@
 use access::Access;
-use error::FromElementError;
+use errors::*;
 use is_similar::{IsSimilar, IsSimilarOptions};
 use protection::Protection;
 use types::*;
@@ -16,8 +16,7 @@ pub struct RegisterPropertiesGroup {
 }
 
 impl RegisterPropertiesGroup {
-    pub fn from_element(element: &xmltree::Element)
-                        -> Result<RegisterPropertiesGroup, FromElementError> {
+    pub fn from_element(element: &xmltree::Element) -> Result<RegisterPropertiesGroup> {
         let size = match get_child_text(element, "size") {
             Some(s) => Some(try!(s.parse())),
             None => None,
